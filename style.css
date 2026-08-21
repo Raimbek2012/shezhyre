@@ -389,3 +389,44 @@ footer {
     font-size: 14px;
   }
 }
+
+/* Плавающая кнопка создания основателя в углу экрана */
+.fab-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  font-size: 32px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.fab-btn:hover {
+  background-color: #219150;
+  transform: scale(1.08);
+}
+
+/* Кнопка редактирования имени */
+.edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0.6;
+  padding: 2px;
+  transition: opacity 0.2s;
+}
+
+.edit-btn:hover {
+  opacity: 1;
+}

@@ -12,13 +12,11 @@
     <h1>Шежире рода Ишаевых</h1>
     <p>Генеалогическое древо и история нашей семьи</p>
 
-    <!-- Панель авторизации в шапке -->
+    <!-- Панель авторизации -->
     <div id="auth-panel" class="auth-panel">
-      <!-- Для гостей -->
       <div id="guest-view">
         <button id="open-auth-modal-btn" class="btn btn-outline">Войти / Регистрация</button>
       </div>
-      <!-- Для авторизованных пользователей -->
       <div id="user-view" class="hidden">
         <span id="user-email-display"></span>
         <button id="logout-btn" class="btn btn-small">Выйти</button>
@@ -28,7 +26,7 @@
 
   <main>
     <section id="tree-container">
-      <p class="instruction">Чтобы добавлять потомков, необходимо войти в аккаунт.</p>
+      <p class="instruction">Чтобы добавлять или редактировать записи, необходимо войти в аккаунт.</p>
 
       <div class="tree">
         <ul>
@@ -38,32 +36,50 @@
     </section>
   </main>
 
-  <!-- Модальное окно Авторизации / Регистрации -->
-  <div id="auth-modal-overlay" class="modal-overlay hidden">
+  <!-- Плавающая кнопка создания основателя (для авторизованных) -->
+  <button id="add-root-btn" class="fab-btn hidden" title="Добавить нового основателя">+</button>
+
+  <!-- Модальное окно: Добавление основателя -->
+  <div id="root-modal-overlay" class="modal-overlay hidden">
     <div class="modal">
-      <button id="close-auth-modal-btn" class="close-btn">&times;</button>
-      <h3 id="auth-title">Вход в систему</h3>
-
-      <form id="auth-form">
+      <button id="close-root-modal-btn" class="close-btn">&times;</button>
+      <h3>Добавить новый род / основателя</h3>
+      
+      <form id="add-root-form">
         <div class="form-group">
-          <label for="auth-email">Email:</label>
-          <input type="email" id="auth-email" placeholder="example@mail.com" required>
+          <label for="root-name-input">Имя и Фамилия основателя:</label>
+          <input type="text" id="root-name-input" placeholder="Например: Ишаев Хан" required>
         </div>
 
-        <div class="form-group">
-          <label for="auth-password">Пароль:</label>
-          <input type="password" id="auth-password" placeholder="Минимум 6 символов" required minlength="6">
-        </div>
-
-        <div class="form-actions-stack">
-          <button type="submit" id="auth-submit-btn" class="btn btn-primary">Войти</button>
-          <button type="button" id="toggle-auth-mode-btn" class="btn-link">Нет аккаунта? Зарегистрироваться</button>
+        <div class="form-actions">
+          <button type="button" id="cancel-root-btn" class="btn btn-secondary">Отмена</button>
+          <button type="submit" class="btn btn-primary">Добавить</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Модальное окно добавления родственника -->
+  <!-- Модальное окно: Редактирование имени -->
+  <div id="edit-modal-overlay" class="modal-overlay hidden">
+    <div class="modal">
+      <button id="close-edit-modal-btn" class="close-btn">&times;</button>
+      <h3>Изменить имя</h3>
+      
+      <form id="edit-person-form">
+        <div class="form-group">
+          <label for="edit-name-input">Новое имя и фамилия:</label>
+          <input type="text" id="edit-name-input" required>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" id="cancel-edit-btn" class="btn btn-secondary">Отмена</button>
+          <button type="submit" class="btn btn-primary">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Модальное окно: Добавление потомка -->
   <div id="modal-overlay" class="modal-overlay hidden">
     <div class="modal">
       <button id="close-modal-btn" class="close-btn">&times;</button>
@@ -83,6 +99,31 @@
         <div class="form-actions">
           <button type="button" id="cancel-btn" class="btn btn-secondary">Отмена</button>
           <button type="submit" class="btn btn-primary">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Модальное окно Авторизации -->
+  <div id="auth-modal-overlay" class="modal-overlay hidden">
+    <div class="modal">
+      <button id="close-auth-modal-btn" class="close-btn">&times;</button>
+      <h3 id="auth-title">Вход в систему</h3>
+
+      <form id="auth-form">
+        <div class="form-group">
+          <label for="auth-email">Email:</label>
+          <input type="email" id="auth-email" placeholder="example@mail.com" required>
+        </div>
+
+        <div class="form-group">
+          <label for="auth-password">Пароль:</label>
+          <input type="password" id="auth-password" placeholder="Минимум 6 символов" required minlength="6">
+        </div>
+
+        <div class="form-actions-stack">
+          <button type="submit" id="auth-submit-btn" class="btn btn-primary">Войти</button>
+          <button type="button" id="toggle-auth-mode-btn" class="btn-link">Нет аккаунта? Зарегистрироваться</button>
         </div>
       </form>
     </div>

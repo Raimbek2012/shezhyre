@@ -4,13 +4,28 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 document.addEventListener('DOMContentLoaded', async function () {
-  // Элементы формы добавления потомка
+  // Модалка добавления потомка
   const modalOverlay = document.getElementById('modal-overlay');
   const closeModalBtn = document.getElementById('close-modal-btn');
   const cancelBtn = document.getElementById('cancel-btn');
   const addChildForm = document.getElementById('add-child-form');
   const parentNameInput = document.getElementById('parent-name-input');
   const childNameInput = document.getElementById('child-name-input');
+
+  // Модалка добавления основателя
+  const addRootBtn = document.getElementById('add-root-btn');
+  const rootModalOverlay = document.getElementById('root-modal-overlay');
+  const closeRootModalBtn = document.getElementById('close-root-modal-btn');
+  const cancelRootBtn = document.getElementById('cancel-root-btn');
+  const addRootForm = document.getElementById('add-root-form');
+  const rootNameInput = document.getElementById('root-name-input');
+
+  // Модалка редактирования имени
+  const editModalOverlay = document.getElementById('edit-modal-overlay');
+  const closeEditModalBtn = document.getElementById('close-edit-modal-btn');
+  const cancelEditBtn = document.getElementById('cancel-edit-btn');
+  const editPersonForm = document.getElementById('edit-person-form');
+  const editNameInput = document.getElementById('edit-name-input');
 
   // Элементы авторизации
   const authModalOverlay = document.getElementById('auth-modal-overlay');
@@ -28,10 +43,11 @@ document.addEventListener('DOMContentLoaded', async function () {
   const logoutBtn = document.getElementById('logout-btn');
 
   let currentParentId = null;
+  let currentEditPersonId = null;
   let currentUser = null;
-  let isSignUpMode = false; // По умолчанию режим "Вход"
+  let isSignUpMode = false;
 
-  // 1. ПРОВЕРКА СЕССИИ ПОЛЬЗОВАТЕЛЯ
+  // 1. ПРОВЕРКА СЕССИИ
   async function checkUserSession() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     currentUser = session ? session.user : null;
@@ -43,41 +59,44 @@ document.addEventListener('DOMContentLoaded', async function () {
       guestView.classList.add('hidden');
       userView.classList.remove('hidden');
       userEmailDisplay.textContent = currentUser.email;
+      addRootBtn.classList.remove('hidden');
     } else {
       guestView.classList.remove('hidden');
       userView.classList.add('hidden');
       userEmailDisplay.textContent = '';
+      addRootBtn.classList.add('hidden');
     }
-    loadTree(); // Перезагружаем древо, чтобы показать/скрыть кнопки "+"
+    loadTree();
   }
 
-  // Отслеживание изменений статуса авторизации (вход / выход)
   supabaseClient.auth.onAuthStateChange((_event, session) => {
     currentUser = session ? session.user : null;
     updateAuthUI();
   });
 
-  // 2. ЗАГРУЗКА И ОТОБРАЖЕНИЕ ДРЕВА
+  // 2. ЗАГРУЗКА ДРЕВА
   async function loadTree() {
     const treeContainer = document.querySelector('.tree > ul');
-    treeContainer.innerHTML = '<li>Загрузка шежире...</li>';
+    treeContainer.innerHTML = '<li>Загрузка...</li>';
 
     const { data: people, error } = await supabaseClient.from('people').select('*');
 
     if (error) {
-      console.error('Ошибка загрузки:', error);
-      treeContainer.innerHTML = '<li>Ошибка загрузки данных</li>';
+      console.error(error);
+      treeContainer.innerHTML = '<li>Ошибка загрузки</li>';
       return;
     }
 
     treeContainer.innerHTML = '';
-    const rootPerson = people.find(p => p.parent_id === null);
+    const rootPeople = people.filter(p => p.parent_id === null);
 
-    if (rootPerson) {
-      const rootElement = createPersonElement(rootPerson, people);
-      treeContainer.appendChild(rootElement);
+    if (rootPeople.length > 0) {
+      rootPeople.forEach(rootPerson => {
+        const rootElement = createPersonElement(rootPerson, people);
+        treeContainer.appendChild(rootElement);
+      });
     } else {
-      treeContainer.innerHTML = '<li>Основатель не найден</li>';
+      treeContainer.innerHTML = '<li>Нет основателей. Нажмите "+" внизу экрана, чтобы создать первого.</li>';
     }
   }
 
@@ -85,15 +104,17 @@ document.addEventListener('DOMContentLoaded', async function () {
     const li = document.createElement('li');
     const isRoot = person.parent_id === null;
 
-    // Показываем кнопку "+" только для авторизованных пользователей
-    const addButtonHTML = currentUser 
-      ? `<button class="add-child-btn" title="Добавить ребенка">+</button>` 
+    const actionButtonsHTML = currentUser 
+      ? `
+        <button class="edit-btn" title="Изменить имя">✏️</button>
+        <button class="add-child-btn" title="Добавить ребенка">+</button>
+        ` 
       : '';
 
     li.innerHTML = `
       <div class="person-card ${isRoot ? 'root-person' : ''}" data-id="${person.id}">
         <span class="name">${person.name}</span>
-        ${addButtonHTML}
+        ${actionButtonsHTML}
       </div>
     `;
 
@@ -110,45 +131,72 @@ document.addEventListener('DOMContentLoaded', async function () {
     return li;
   }
 
-  // 3. УПРАВЛЕНИЕ ОКНОМ АВТОРИЗАЦИИ
-  openAuthModalBtn.addEventListener('click', () => authModalOverlay.classList.remove('hidden'));
-  closeAuthModalBtn.addEventListener('click', () => authModalOverlay.classList.add('hidden'));
+  // 3. ДОБАВЛЕНИЕ НОВОГО ОСНОВАТЕЛЯ
+  addRootBtn.addEventListener('click', () => rootModalOverlay.classList.remove('hidden'));
+  
+  function closeRootModal() {
+    rootModalOverlay.classList.add('hidden');
+    rootNameInput.value = '';
+  }
 
-  toggleAuthModeBtn.addEventListener('click', () => {
-    isSignUpMode = !isSignUpMode;
-    if (isSignUpMode) {
-      authTitle.textContent = 'Регистрация';
-      authSubmitBtn.textContent = 'Зарегистрироваться';
-      toggleAuthModeBtn.textContent = 'Уже есть аккаунт? Войти';
-    } else {
-      authTitle.textContent = 'Вход в систему';
-      authSubmitBtn.textContent = 'Войти';
-      toggleAuthModeBtn.textContent = 'Нет аккаунта? Зарегистрироваться';
-    }
-  });
+  closeRootModalBtn.addEventListener('click', closeRootModal);
+  cancelRootBtn.addEventListener('click', closeRootModal);
 
-  authForm.addEventListener('submit', async (e) => {
+  addRootForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = authEmailInput.value.trim();
-    const password = authPasswordInput.value.trim();
+    const name = rootNameInput.value.trim();
+    if (!name) return;
 
-    if (isSignUpMode) {
-      const { error } = await supabaseClient.auth.signUp({ email, password });
-      if (error) alert('Ошибка регистрации: ' + error.message);
-      else {
-        alert('Успешная регистрация! Теперь вы можете войти.');
-        authModalOverlay.classList.add('hidden');
-      }
-    } else {
-      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      if (error) alert('Ошибка входа: ' + error.message);
-      else authModalOverlay.classList.add('hidden');
+    const { error } = await supabaseClient
+      .from('people')
+      .insert([{ name: name, parent_id: null }]);
+
+    if (error) alert('Ошибка создания: ' + error.message);
+    else {
+      closeRootModal();
+      loadTree();
     }
   });
 
-  logoutBtn.addEventListener('click', () => supabaseClient.auth.signOut());
+  // 4. РЕДАКТИРОВАНИЕ ИМЕНИ
+  document.addEventListener('click', function (event) {
+    if (event.target.classList.contains('edit-btn')) {
+      const parentCard = event.target.closest('.person-card');
+      if (parentCard) {
+        currentEditPersonId = parentCard.getAttribute('data-id');
+        editNameInput.value = parentCard.querySelector('.name').textContent;
+        editModalOverlay.classList.remove('hidden');
+      }
+    }
+  });
 
-  // 4. УПРАВЛЕНИЕ ОКНОМ ДОБАВЛЕНИЯ ПОТОМКА
+  function closeEditModal() {
+    editModalOverlay.classList.add('hidden');
+    editNameInput.value = '';
+    currentEditPersonId = null;
+  }
+
+  closeEditModalBtn.addEventListener('click', closeEditModal);
+  cancelEditBtn.addEventListener('click', closeEditModal);
+
+  editPersonForm.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    const newName = editNameInput.value.trim();
+    if (!newName || !currentEditPersonId) return;
+
+    const { error } = await supabaseClient
+      .from('people')
+      .update({ name: newName })
+      .eq('id', currentEditPersonId);
+
+    if (error) alert('Ошибка обновления: ' + error.message);
+    else {
+      closeEditModal();
+      loadTree();
+    }
+  });
+
+  // 5. ДОБАВЛЕНИЕ ПОТОМКА
   document.addEventListener('click', function (event) {
     if (event.target.classList.contains('add-child-btn')) {
       const parentCard = event.target.closest('.person-card');
@@ -185,6 +233,37 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
   });
 
-  // Запуск
+  // 6. АВТОРИЗАЦИЯ
+  openAuthModalBtn.addEventListener('click', () => authModalOverlay.classList.remove('hidden'));
+  closeAuthModalBtn.addEventListener('click', () => authModalOverlay.classList.add('hidden'));
+
+  toggleAuthModeBtn.addEventListener('click', () => {
+    isSignUpMode = !isSignUpMode;
+    authTitle.textContent = isSignUpMode ? 'Регистрация' : 'Вход в систему';
+    authSubmitBtn.textContent = isSignUpMode ? 'Зарегистрироваться' : 'Войти';
+    toggleAuthModeBtn.textContent = isSignUpMode ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться';
+  });
+
+  authForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = authEmailInput.value.trim();
+    const password = authPasswordInput.value.trim();
+
+    if (isSignUpMode) {
+      const { error } = await supabaseClient.auth.signUp({ email, password });
+      if (error) alert('Ошибка регистрации: ' + error.message);
+      else {
+        alert('Успешная регистрация!');
+        authModalOverlay.classList.add('hidden');
+      }
+    } else {
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) alert('Ошибка входа: ' + error.message);
+      else authModalOverlay.classList.add('hidden');
+    }
+  });
+
+  logoutBtn.addEventListener('click', () => supabaseClient.auth.signOut());
+
   await checkUserSession();
 });
