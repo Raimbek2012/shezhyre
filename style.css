@@ -507,3 +507,16 @@ footer {
   margin-left: 4px;
   font-weight: bold;
 }
+
+/* Стиль имени супруга/супруги */
+.spouse-name {
+  font-size: 0.85em;
+  color: #e74c3c;
+  font-weight: normal;
+  margin-left: 4px;
+  background: #fdf2e9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #fadbd8;
+  display: inline-block;
+}

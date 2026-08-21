@@ -20,12 +20,13 @@ document.addEventListener('DOMContentLoaded', async function () {
   const addRootForm = document.getElementById('add-root-form');
   const rootNameInput = document.getElementById('root-name-input');
 
-  // Элементы модалки редактирования имени
+  // Элементы модалки редактирования карточки (имя и супруг)
   const editModalOverlay = document.getElementById('edit-modal-overlay');
   const closeEditModalBtn = document.getElementById('close-edit-modal-btn');
   const cancelEditBtn = document.getElementById('cancel-edit-btn');
   const editPersonForm = document.getElementById('edit-person-form');
   const editNameInput = document.getElementById('edit-name-input');
+  const editSpouseInput = document.getElementById('edit-spouse-input');
 
   // Элементы авторизации
   const authModalOverlay = document.getElementById('auth-modal-overlay');
@@ -110,16 +111,18 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     const actionButtonsHTML = currentUser 
       ? `
-        <button class="edit-btn" title="Изменить имя">✏️</button>
+        <button class="edit-btn" title="Изменить имя / супруга">✏️</button>
         <button class="add-child-btn" title="Добавить ребенка">+</button>
         ` 
       : '';
 
     const toggleIndicatorHTML = hasChildren ? `<span class="toggle-icon">[−]</span>` : '';
+    const spouseHTML = person.spouse ? `<span class="spouse-name">❤️ ${person.spouse}</span>` : '';
 
     li.innerHTML = `
-      <div class="person-card ${isRoot ? 'root-person' : ''}" data-id="${person.id}">
+      <div class="person-card ${isRoot ? 'root-person' : ''}" data-id="${person.id}" data-spouse="${person.spouse || ''}">
         <span class="name">${person.name}</span>
+        ${spouseHTML}
         ${toggleIndicatorHTML}
         ${actionButtonsHTML}
       </div>
@@ -140,7 +143,6 @@ document.addEventListener('DOMContentLoaded', async function () {
   // СВОРАЧИВАНИЕ / РАЗВОРАЧИВАНИЕ ВЕТЕК ПРИ КЛИКЕ
   document.addEventListener('click', function (event) {
     const card = event.target.closest('.person-card');
-    // Если кликнули по кнопкам действия — сворачивание не срабатывает
     if (!card || event.target.classList.contains('edit-btn') || event.target.classList.contains('add-child-btn')) {
       return;
     }
@@ -188,13 +190,14 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   }
 
-  // 4. РЕДАКТИРОВАНИЕ ИМЕНИ
+  // 4. РЕДАКТИРОВАНИЕ ИМЕНИ И СУПРУГА
   document.addEventListener('click', function (event) {
     if (event.target.classList.contains('edit-btn')) {
       const parentCard = event.target.closest('.person-card');
       if (parentCard) {
         currentEditPersonId = parentCard.getAttribute('data-id');
         editNameInput.value = parentCard.querySelector('.name').textContent;
+        editSpouseInput.value = parentCard.getAttribute('data-spouse') || '';
         editModalOverlay.classList.remove('hidden');
       }
     }
@@ -203,6 +206,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   function closeEditModal() {
     if (editModalOverlay) editModalOverlay.classList.add('hidden');
     if (editNameInput) editNameInput.value = '';
+    if (editSpouseInput) editSpouseInput.value = '';
     currentEditPersonId = null;
   }
 
@@ -213,11 +217,16 @@ document.addEventListener('DOMContentLoaded', async function () {
     editPersonForm.addEventListener('submit', async function (event) {
       event.preventDefault();
       const newName = editNameInput.value.trim();
+      const newSpouse = editSpouseInput.value.trim();
+
       if (!newName || !currentEditPersonId) return;
 
       const { error } = await supabaseClient
         .from('people')
-        .update({ name: newName })
+        .update({ 
+          name: newName,
+          spouse: newSpouse || null 
+        })
         .eq('id', currentEditPersonId);
 
       if (error) alert('Ошибка обновления: ' + error.message);
@@ -357,17 +366,15 @@ document.addEventListener('DOMContentLoaded', async function () {
       updateTransform();
     }, { passive: false });
 
-    // ---- СЕНСОРНЫЙ ЭКРАН (ТЕЛЕФОНЫ И ТАБЛЕТЫ) ----
+    // ---- СЕНСОРНЫЙ ЭКРАН (ТЕЛЕФОНЫ) ----
     viewport.addEventListener('touchstart', (e) => {
       if (e.target.closest('.person-card') || e.target.closest('#zoom-controls')) return;
 
       if (e.touches.length === 1) {
-        // Перетаскивание одним пальцем
         isDragging = true;
         startX = e.touches[0].clientX - pointX;
         startY = e.touches[0].clientY - pointY;
       } else if (e.touches.length === 2) {
-        // Зум двумя пальцами (Pinch)
         isDragging = false;
         initialPinchDistance = Math.hypot(
           e.touches[0].clientX - e.touches[1].clientX,

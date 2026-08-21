@@ -37,7 +37,7 @@
 
       <!-- Внешняя область-просмотрщик -->
       <div id="viewport">
-        <!-- Внутренний контейнер, который будет трансформироваться -->
+        <!-- Внутренний контейнер для масштабирования -->
         <div id="pan-container">
           <div class="tree">
             <ul>
@@ -49,7 +49,7 @@
     </section>
   </main>
 
-  <!-- Плавающая кнопка создания основателя (для авторизованных) -->
+  <!-- Плавающая кнопка создания основателя -->
   <button id="add-root-btn" class="fab-btn hidden" title="Добавить нового основателя">+</button>
 
   <!-- Модальное окно: Добавление основателя -->
@@ -72,16 +72,21 @@
     </div>
   </div>
 
-  <!-- Модальное окно: Редактирование имени -->
+  <!-- Модальное окно: Редактирование карточки (Имя и Супруг) -->
   <div id="edit-modal-overlay" class="modal-overlay hidden">
     <div class="modal">
       <button id="close-edit-modal-btn" class="close-btn">&times;</button>
-      <h3>Изменить имя</h3>
+      <h3>Редактировать данные</h3>
       
       <form id="edit-person-form">
         <div class="form-group">
-          <label for="edit-name-input">Новое имя и фамилия:</label>
+          <label for="edit-name-input">Имя и Фамилия:</label>
           <input type="text" id="edit-name-input" required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-spouse-input">Супруг / Супруга (необязательно):</label>
+          <input type="text" id="edit-spouse-input" placeholder="Например: Алия">
         </div>
 
         <div class="form-actions">
@@ -100,7 +105,7 @@
       
       <form id="add-child-form">
         <div class="form-group">
-          <label for="parent-name-input">Отец / Мать:</label>
+          <label for="parent-name-input">Родитель:</label>
           <input type="text" id="parent-name-input" disabled readonly>
         </div>
 
