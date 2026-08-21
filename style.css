@@ -1,0 +1,391 @@
+/* ==========================================
+   1. СБРОС И ОСНОВНЫЕ СТИЛИ
+   ========================================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f4f7f6;
+  color: #333333;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ==========================================
+   2. ШАПКА И ПАНЕЛЬ АВТОРИЗАЦИИ
+   ========================================== */
+header {
+  background-color: #1b3b6f;
+  color: #ffffff;
+  text-align: center;
+  padding: 25px 15px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+
+header h1 {
+  font-size: 1.8rem;
+  margin-bottom: 5px;
+  letter-spacing: 0.5px;
+}
+
+header p {
+  font-size: 0.95rem;
+  opacity: 0.85;
+}
+
+.auth-panel {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+#user-email-display {
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.15);
+  padding: 4px 12px;
+  border-radius: 15px;
+}
+
+/* Кнопки */
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background-color: #27ae60;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #219150;
+}
+
+.btn-secondary {
+  background-color: #7f8c8d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #95a5a6;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid #ffffff;
+  color: #ffffff;
+}
+
+.btn-outline:hover {
+  background: #ffffff;
+  color: #1b3b6f;
+}
+
+.btn-small {
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  background-color: #e74c3c;
+  color: white;
+}
+
+.btn-small:hover {
+  background-color: #c0392b;
+}
+
+/* ==========================================
+   3. ГЛАВНЫЙ КОНТЕЙНЕР И ДРЕВО (ЛИНИИ)
+   ========================================== */
+main {
+  flex: 1;
+  padding: 30px 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-x: auto; /* Включаем горизонтальную прокрутку */
+}
+
+.instruction {
+  text-align: center;
+  margin-bottom: 25px;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.tree {
+  display: inline-block;
+  white-space: nowrap; /* Предотвращает разрыв веток */
+  padding: 20px;
+}
+
+/* Построение вертикально-иерархической структуры */
+.tree ul {
+  padding-top: 20px;
+  position: relative;
+  transition: all 0.5s;
+  display: flex;
+  justify-content: center;
+}
+
+.tree li {
+  float: left;
+  text-align: center;
+  list-style-type: none;
+  position: relative;
+  padding: 20px 10px 0 10px;
+  transition: all 0.5s;
+}
+
+/* СОЕДИНИТЕЛЬНЫЕ ЛИНИИ (CSS magic) */
+.tree li::before, .tree li::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 50%;
+  border-top: 2px solid #b2bec3;
+  width: 50%;
+  height: 20px;
+}
+
+.tree li::after {
+  right: auto;
+  left: 50%;
+  border-left: 2px solid #b2bec3;
+}
+
+/* Убираем лишние линии у первого и последнего элемента ряда */
+.tree li:only-child::after, .tree li:only-child::before {
+  display: none;
+}
+
+.tree li:only-child {
+  padding-top: 0;
+}
+
+.tree li:first-child::before, .tree li:last-child::after {
+  border: none;
+}
+
+.tree li:last-child::before {
+  border-right: 2px solid #b2bec3;
+  border-radius: 0 5px 0 0;
+}
+
+.tree li:first-child::after {
+  border-radius: 5px 0 0 0;
+}
+
+/* Линия вниз от родителя к детям */
+.tree ul ul::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  border-left: 2px solid #b2bec3;
+  width: 0;
+  height: 20px;
+}
+
+/* ==========================================
+   4. КАРТОЧКИ ЛЮДЕЙ
+   ========================================== */
+.person-card {
+  border: 2px solid #dfe6e9;
+  padding: 12px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 8px;
+  background-color: #ffffff;
+  color: #2d3436;
+  font-weight: 600;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 2;
+}
+
+.person-card:hover {
+  border-color: #0984e3;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(9, 132, 227, 0.15);
+}
+
+/* Главный предок */
+.root-person {
+  background-color: #1b3b6f;
+  color: #ffffff;
+  border-color: #0c2461;
+}
+
+.root-person .name {
+  font-size: 1.1rem;
+}
+
+.add-child-btn {
+  background-color: #0984e3;
+  color: white;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.add-child-btn:hover {
+  background-color: #74b9ff;
+}
+
+/* ==========================================
+   5. МОДАЛЬНЫЕ ОКНА
+   ========================================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  background-color: #ffffff;
+  padding: 25px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  border: none;
+  background: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #a4b0be;
+}
+
+.close-btn:hover {
+  color: #2d3436;
+}
+
+.modal h3 {
+  margin-bottom: 15px;
+  color: #1b3b6f;
+}
+
+.form-group {
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 0.85rem;
+  color: #636e72;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #dfe6e9;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #0984e3;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.form-actions-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #0984e3;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ==========================================
+   6. ПОДВАЛ (FOOTER) И МОБИЛЬНАЯ АДАПТАЦИЯ
+   ========================================== */
+footer {
+  text-align: center;
+  padding: 15px;
+  background-color: #e1e8ef;
+  font-size: 0.85rem;
+  color: #636e72;
+}
+
+@media (max-width: 600px) {
+  header h1 {
+    font-size: 1.4rem;
+  }
+
+  main {
+    padding: 15px 5px;
+  }
+
+  .tree li {
+    padding: 15px 4px 0 4px;
+  }
+
+  .person-card {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+
+  .add-child-btn {
+    width: 20px;
+    height: 20px;
+    font-size: 14px;
+  }
+}
