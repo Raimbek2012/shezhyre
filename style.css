@@ -500,3 +500,10 @@ footer {
 #zoom-reset {
   font-size: 12px !important;
 }
+
+.toggle-icon {
+  font-size: 0.8rem;
+  color: #0984e3;
+  margin-left: 4px;
+  font-weight: bold;
+}

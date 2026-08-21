@@ -105,6 +105,8 @@ document.addEventListener('DOMContentLoaded', async function () {
   function createPersonElement(person, allPeople) {
     const li = document.createElement('li');
     const isRoot = person.parent_id === null;
+    const children = allPeople.filter(p => p.parent_id === person.id);
+    const hasChildren = children.length > 0;
 
     const actionButtonsHTML = currentUser 
       ? `
@@ -113,15 +115,17 @@ document.addEventListener('DOMContentLoaded', async function () {
         ` 
       : '';
 
+    const toggleIndicatorHTML = hasChildren ? `<span class="toggle-icon">[−]</span>` : '';
+
     li.innerHTML = `
       <div class="person-card ${isRoot ? 'root-person' : ''}" data-id="${person.id}">
         <span class="name">${person.name}</span>
+        ${toggleIndicatorHTML}
         ${actionButtonsHTML}
       </div>
     `;
 
-    const children = allPeople.filter(p => p.parent_id === person.id);
-    if (children.length > 0) {
+    if (hasChildren) {
       const childrenUl = document.createElement('ul');
       childrenUl.className = 'children';
       children.forEach(child => {
@@ -132,6 +136,26 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     return li;
   }
+
+  // СВОРАЧИВАНИЕ / РАЗВОРАЧИВАНИЕ ВЕТЕК ПРИ КЛИКЕ
+  document.addEventListener('click', function (event) {
+    const card = event.target.closest('.person-card');
+    // Если кликнули по кнопкам действия — сворачивание не срабатывает
+    if (!card || event.target.classList.contains('edit-btn') || event.target.classList.contains('add-child-btn')) {
+      return;
+    }
+
+    const li = card.closest('li');
+    const childrenUl = li.querySelector(':scope > ul.children');
+    const toggleIcon = card.querySelector('.toggle-icon');
+
+    if (childrenUl) {
+      childrenUl.classList.toggle('hidden');
+      if (toggleIcon) {
+        toggleIcon.textContent = childrenUl.classList.contains('hidden') ? '[+]' : '[−]';
+      }
+    }
+  });
 
   // 3. ДОБАВЛЕНИЕ НОВОГО ОСНОВАТЕЛЯ РОДА
   if (addRootBtn) {
@@ -243,7 +267,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   }
 
-  // 6. АВТОРИЗАЦИЯ ПOЛЬЗОВАТЕЛЕЙ
+  // 6. АВТОРИЗАЦИЯ
   if (openAuthModalBtn) openAuthModalBtn.addEventListener('click', () => authModalOverlay.classList.remove('hidden'));
   if (closeAuthModalBtn) closeAuthModalBtn.addEventListener('click', () => authModalOverlay.classList.add('hidden'));
 
@@ -280,7 +304,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   if (logoutBtn) logoutBtn.addEventListener('click', () => supabaseClient.auth.signOut());
 
   // ==========================================
-  // 7. ЛОГИКА МАСШТАБИРОВАНИЯ И ПЕРЕТАСКИВАНИЯ (ZOOM & PAN)
+  // 7. МАСШТАБИРОВАНИЕ И ПЕРЕТАСКИВАНИЕ (ПК + ТЕЛЕФОНЫ)
   // ==========================================
   const viewport = document.getElementById('viewport');
   const panContainer = document.getElementById('pan-container');
@@ -294,6 +318,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   let startX = 0;
   let startY = 0;
   let isDragging = false;
+  let initialPinchDistance = null;
 
   function updateTransform() {
     if (panContainer) {
@@ -302,7 +327,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   }
 
   if (viewport) {
-    // Перетаскивание мышью / пальцем
+    // ---- МЫШЬ (ПК) ----
     viewport.addEventListener('mousedown', (e) => {
       if (e.target.closest('.person-card') || e.target.closest('#zoom-controls')) return;
       isDragging = true;
@@ -318,53 +343,71 @@ document.addEventListener('DOMContentLoaded', async function () {
       updateTransform();
     });
 
-    window.addEventListener('mouseup', () => {
-      isDragging = false;
-    });
+    window.addEventListener('mouseup', () => { isDragging = false; });
 
-    // Зум колесиком мыши
     viewport.addEventListener('wheel', (e) => {
       e.preventDefault();
       const xs = (e.clientX - pointX) / scale;
       const ys = (e.clientY - pointY) / scale;
       const delta = -e.deltaY;
 
-      if (delta > 0) {
-        scale = Math.min(scale * 1.1, 3);
-      } else {
-        scale = Math.max(scale / 1.1, 0.3);
-      }
-
+      scale = delta > 0 ? Math.min(scale * 1.1, 3) : Math.max(scale / 1.1, 0.3);
       pointX = e.clientX - xs * scale;
       pointY = e.clientY - ys * scale;
       updateTransform();
     }, { passive: false });
-  }
 
-  // Кнопки зума
-  if (zoomInBtn) {
-    zoomInBtn.addEventListener('click', () => {
-      scale = Math.min(scale * 1.2, 3);
-      updateTransform();
+    // ---- СЕНСОРНЫЙ ЭКРАН (ТЕЛЕФОНЫ И ТАБЛЕТЫ) ----
+    viewport.addEventListener('touchstart', (e) => {
+      if (e.target.closest('.person-card') || e.target.closest('#zoom-controls')) return;
+
+      if (e.touches.length === 1) {
+        // Перетаскивание одним пальцем
+        isDragging = true;
+        startX = e.touches[0].clientX - pointX;
+        startY = e.touches[0].clientY - pointY;
+      } else if (e.touches.length === 2) {
+        // Зум двумя пальцами (Pinch)
+        isDragging = false;
+        initialPinchDistance = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+      }
+    }, { passive: false });
+
+    viewport.addEventListener('touchmove', (e) => {
+      if (e.target.closest('#zoom-controls')) return;
+
+      if (e.touches.length === 1 && isDragging) {
+        e.preventDefault();
+        pointX = e.touches[0].clientX - startX;
+        pointY = e.touches[0].clientY - startY;
+        updateTransform();
+      } else if (e.touches.length === 2 && initialPinchDistance) {
+        e.preventDefault();
+        const currentDistance = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY
+        );
+
+        const factor = currentDistance / initialPinchDistance;
+        scale = Math.min(Math.max(scale * factor, 0.3), 3);
+        initialPinchDistance = currentDistance;
+        updateTransform();
+      }
+    }, { passive: false });
+
+    viewport.addEventListener('touchend', (e) => {
+      if (e.touches.length < 2) initialPinchDistance = null;
+      if (e.touches.length === 0) isDragging = false;
     });
   }
 
-  if (zoomOutBtn) {
-    zoomOutBtn.addEventListener('click', () => {
-      scale = Math.max(scale / 1.2, 0.3);
-      updateTransform();
-    });
-  }
+  // Кнопки масштаба
+  if (zoomInBtn) zoomInBtn.addEventListener('click', () => { scale = Math.min(scale * 1.2, 3); updateTransform(); });
+  if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => { scale = Math.max(scale / 1.2, 0.3); updateTransform(); });
+  if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => { scale = 1; pointX = 0; pointY = 0; updateTransform(); });
 
-  if (zoomResetBtn) {
-    zoomResetBtn.addEventListener('click', () => {
-      scale = 1;
-      pointX = 0;
-      pointY = 0;
-      updateTransform();
-    });
-  }
-
-  // Запуск проверки авторизации
   await checkUserSession();
 });
