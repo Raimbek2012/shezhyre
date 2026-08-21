@@ -4,7 +4,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 document.addEventListener('DOMContentLoaded', async function () {
-  // Модалка добавления потомка
+  // Элементы модалки добавления потомка
   const modalOverlay = document.getElementById('modal-overlay');
   const closeModalBtn = document.getElementById('close-modal-btn');
   const cancelBtn = document.getElementById('cancel-btn');
@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const parentNameInput = document.getElementById('parent-name-input');
   const childNameInput = document.getElementById('child-name-input');
 
-  // Модалка добавления основателя
+  // Элементы модалки добавления основателя
   const addRootBtn = document.getElementById('add-root-btn');
   const rootModalOverlay = document.getElementById('root-modal-overlay');
   const closeRootModalBtn = document.getElementById('close-root-modal-btn');
@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const addRootForm = document.getElementById('add-root-form');
   const rootNameInput = document.getElementById('root-name-input');
 
-  // Модалка редактирования имени
+  // Элементы модалки редактирования имени
   const editModalOverlay = document.getElementById('edit-modal-overlay');
   const closeEditModalBtn = document.getElementById('close-edit-modal-btn');
   const cancelEditBtn = document.getElementById('cancel-edit-btn');
@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   let currentUser = null;
   let isSignUpMode = false;
 
-  // 1. ПРОВЕРКА СЕССИИ
+  // 1. ПРОВЕРКА СЕССИИ И ПОЛЬЗОВАТЕЛЯ
   async function checkUserSession() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     currentUser = session ? session.user : null;
@@ -59,12 +59,12 @@ document.addEventListener('DOMContentLoaded', async function () {
       guestView.classList.add('hidden');
       userView.classList.remove('hidden');
       userEmailDisplay.textContent = currentUser.email;
-      addRootBtn.classList.remove('hidden');
+      if (addRootBtn) addRootBtn.classList.remove('hidden');
     } else {
       guestView.classList.remove('hidden');
       userView.classList.add('hidden');
       userEmailDisplay.textContent = '';
-      addRootBtn.classList.add('hidden');
+      if (addRootBtn) addRootBtn.classList.add('hidden');
     }
     loadTree();
   }
@@ -74,16 +74,18 @@ document.addEventListener('DOMContentLoaded', async function () {
     updateAuthUI();
   });
 
-  // 2. ЗАГРУЗКА ДРЕВА
+  // 2. ЗАГРУЗКА И ПОСТРОЕНИЕ ДРЕВА
   async function loadTree() {
     const treeContainer = document.querySelector('.tree > ul');
+    if (!treeContainer) return;
+    
     treeContainer.innerHTML = '<li>Загрузка...</li>';
 
     const { data: people, error } = await supabaseClient.from('people').select('*');
 
     if (error) {
       console.error(error);
-      treeContainer.innerHTML = '<li>Ошибка загрузки</li>';
+      treeContainer.innerHTML = '<li>Ошибка загрузки данных</li>';
       return;
     }
 
@@ -131,32 +133,36 @@ document.addEventListener('DOMContentLoaded', async function () {
     return li;
   }
 
-  // 3. ДОБАВЛЕНИЕ НОВОГО ОСНОВАТЕЛЯ
-  addRootBtn.addEventListener('click', () => rootModalOverlay.classList.remove('hidden'));
+  // 3. ДОБАВЛЕНИЕ НОВОГО ОСНОВАТЕЛЯ РОДА
+  if (addRootBtn) {
+    addRootBtn.addEventListener('click', () => rootModalOverlay.classList.remove('hidden'));
+  }
   
   function closeRootModal() {
-    rootModalOverlay.classList.add('hidden');
-    rootNameInput.value = '';
+    if (rootModalOverlay) rootModalOverlay.classList.add('hidden');
+    if (rootNameInput) rootNameInput.value = '';
   }
 
-  closeRootModalBtn.addEventListener('click', closeRootModal);
-  cancelRootBtn.addEventListener('click', closeRootModal);
+  if (closeRootModalBtn) closeRootModalBtn.addEventListener('click', closeRootModal);
+  if (cancelRootBtn) cancelRootBtn.addEventListener('click', closeRootModal);
 
-  addRootForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = rootNameInput.value.trim();
-    if (!name) return;
+  if (addRootForm) {
+    addRootForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = rootNameInput.value.trim();
+      if (!name) return;
 
-    const { error } = await supabaseClient
-      .from('people')
-      .insert([{ name: name, parent_id: null }]);
+      const { error } = await supabaseClient
+        .from('people')
+        .insert([{ name: name, parent_id: null }]);
 
-    if (error) alert('Ошибка создания: ' + error.message);
-    else {
-      closeRootModal();
-      loadTree();
-    }
-  });
+      if (error) alert('Ошибка создания: ' + error.message);
+      else {
+        closeRootModal();
+        loadTree();
+      }
+    });
+  }
 
   // 4. РЕДАКТИРОВАНИЕ ИМЕНИ
   document.addEventListener('click', function (event) {
@@ -171,30 +177,32 @@ document.addEventListener('DOMContentLoaded', async function () {
   });
 
   function closeEditModal() {
-    editModalOverlay.classList.add('hidden');
-    editNameInput.value = '';
+    if (editModalOverlay) editModalOverlay.classList.add('hidden');
+    if (editNameInput) editNameInput.value = '';
     currentEditPersonId = null;
   }
 
-  closeEditModalBtn.addEventListener('click', closeEditModal);
-  cancelEditBtn.addEventListener('click', closeEditModal);
+  if (closeEditModalBtn) closeEditModalBtn.addEventListener('click', closeEditModal);
+  if (cancelEditBtn) cancelEditBtn.addEventListener('click', closeEditModal);
 
-  editPersonForm.addEventListener('submit', async function (event) {
-    event.preventDefault();
-    const newName = editNameInput.value.trim();
-    if (!newName || !currentEditPersonId) return;
+  if (editPersonForm) {
+    editPersonForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      const newName = editNameInput.value.trim();
+      if (!newName || !currentEditPersonId) return;
 
-    const { error } = await supabaseClient
-      .from('people')
-      .update({ name: newName })
-      .eq('id', currentEditPersonId);
+      const { error } = await supabaseClient
+        .from('people')
+        .update({ name: newName })
+        .eq('id', currentEditPersonId);
 
-    if (error) alert('Ошибка обновления: ' + error.message);
-    else {
-      closeEditModal();
-      loadTree();
-    }
-  });
+      if (error) alert('Ошибка обновления: ' + error.message);
+      else {
+        closeEditModal();
+        loadTree();
+      }
+    });
+  }
 
   // 5. ДОБАВЛЕНИЕ ПОТОМКА
   document.addEventListener('click', function (event) {
@@ -209,61 +217,154 @@ document.addEventListener('DOMContentLoaded', async function () {
   });
 
   function closeModal() {
-    modalOverlay.classList.add('hidden');
-    childNameInput.value = '';
+    if (modalOverlay) modalOverlay.classList.add('hidden');
+    if (childNameInput) childNameInput.value = '';
     currentParentId = null;
   }
 
-  closeModalBtn.addEventListener('click', closeModal);
-  cancelBtn.addEventListener('click', closeModal);
+  if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
+  if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
-  addChildForm.addEventListener('submit', async function (event) {
-    event.preventDefault();
-    const newChildName = childNameInput.value.trim();
-    if (!newChildName || !currentParentId) return;
+  if (addChildForm) {
+    addChildForm.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      const newChildName = childNameInput.value.trim();
+      if (!newChildName || !currentParentId) return;
 
-    const { error } = await supabaseClient
-      .from('people')
-      .insert([{ name: newChildName, parent_id: parseInt(currentParentId) }]);
+      const { error } = await supabaseClient
+        .from('people')
+        .insert([{ name: newChildName, parent_id: parseInt(currentParentId) }]);
 
-    if (error) alert('Ошибка сохранения: ' + error.message);
-    else {
-      closeModal();
-      loadTree();
-    }
-  });
-
-  // 6. АВТОРИЗАЦИЯ
-  openAuthModalBtn.addEventListener('click', () => authModalOverlay.classList.remove('hidden'));
-  closeAuthModalBtn.addEventListener('click', () => authModalOverlay.classList.add('hidden'));
-
-  toggleAuthModeBtn.addEventListener('click', () => {
-    isSignUpMode = !isSignUpMode;
-    authTitle.textContent = isSignUpMode ? 'Регистрация' : 'Вход в систему';
-    authSubmitBtn.textContent = isSignUpMode ? 'Зарегистрироваться' : 'Войти';
-    toggleAuthModeBtn.textContent = isSignUpMode ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться';
-  });
-
-  authForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = authEmailInput.value.trim();
-    const password = authPasswordInput.value.trim();
-
-    if (isSignUpMode) {
-      const { error } = await supabaseClient.auth.signUp({ email, password });
-      if (error) alert('Ошибка регистрации: ' + error.message);
+      if (error) alert('Ошибка сохранения: ' + error.message);
       else {
-        alert('Успешная регистрация!');
-        authModalOverlay.classList.add('hidden');
+        closeModal();
+        loadTree();
       }
-    } else {
-      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-      if (error) alert('Ошибка входа: ' + error.message);
-      else authModalOverlay.classList.add('hidden');
+    });
+  }
+
+  // 6. АВТОРИЗАЦИЯ ПOЛЬЗОВАТЕЛЕЙ
+  if (openAuthModalBtn) openAuthModalBtn.addEventListener('click', () => authModalOverlay.classList.remove('hidden'));
+  if (closeAuthModalBtn) closeAuthModalBtn.addEventListener('click', () => authModalOverlay.classList.add('hidden'));
+
+  if (toggleAuthModeBtn) {
+    toggleAuthModeBtn.addEventListener('click', () => {
+      isSignUpMode = !isSignUpMode;
+      authTitle.textContent = isSignUpMode ? 'Регистрация' : 'Вход в систему';
+      authSubmitBtn.textContent = isSignUpMode ? 'Зарегистрироваться' : 'Войти';
+      toggleAuthModeBtn.textContent = isSignUpMode ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться';
+    });
+  }
+
+  if (authForm) {
+    authForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = authEmailInput.value.trim();
+      const password = authPasswordInput.value.trim();
+
+      if (isSignUpMode) {
+        const { error } = await supabaseClient.auth.signUp({ email, password });
+        if (error) alert('Ошибка регистрации: ' + error.message);
+        else {
+          alert('Успешная регистрация!');
+          authModalOverlay.classList.add('hidden');
+        }
+      } else {
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) alert('Ошибка входа: ' + error.message);
+        else authModalOverlay.classList.add('hidden');
+      }
+    });
+  }
+
+  if (logoutBtn) logoutBtn.addEventListener('click', () => supabaseClient.auth.signOut());
+
+  // ==========================================
+  // 7. ЛОГИКА МАСШТАБИРОВАНИЯ И ПЕРЕТАСКИВАНИЯ (ZOOM & PAN)
+  // ==========================================
+  const viewport = document.getElementById('viewport');
+  const panContainer = document.getElementById('pan-container');
+  const zoomInBtn = document.getElementById('zoom-in');
+  const zoomOutBtn = document.getElementById('zoom-out');
+  const zoomResetBtn = document.getElementById('zoom-reset');
+
+  let scale = 1;
+  let pointX = 0;
+  let pointY = 0;
+  let startX = 0;
+  let startY = 0;
+  let isDragging = false;
+
+  function updateTransform() {
+    if (panContainer) {
+      panContainer.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
     }
-  });
+  }
 
-  logoutBtn.addEventListener('click', () => supabaseClient.auth.signOut());
+  if (viewport) {
+    // Перетаскивание мышью / пальцем
+    viewport.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.person-card') || e.target.closest('#zoom-controls')) return;
+      isDragging = true;
+      startX = e.clientX - pointX;
+      startY = e.clientY - pointY;
+    });
 
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      e.preventDefault();
+      pointX = e.clientX - startX;
+      pointY = e.clientY - startY;
+      updateTransform();
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    // Зум колесиком мыши
+    viewport.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const xs = (e.clientX - pointX) / scale;
+      const ys = (e.clientY - pointY) / scale;
+      const delta = -e.deltaY;
+
+      if (delta > 0) {
+        scale = Math.min(scale * 1.1, 3);
+      } else {
+        scale = Math.max(scale / 1.1, 0.3);
+      }
+
+      pointX = e.clientX - xs * scale;
+      pointY = e.clientY - ys * scale;
+      updateTransform();
+    }, { passive: false });
+  }
+
+  // Кнопки зума
+  if (zoomInBtn) {
+    zoomInBtn.addEventListener('click', () => {
+      scale = Math.min(scale * 1.2, 3);
+      updateTransform();
+    });
+  }
+
+  if (zoomOutBtn) {
+    zoomOutBtn.addEventListener('click', () => {
+      scale = Math.max(scale / 1.2, 0.3);
+      updateTransform();
+    });
+  }
+
+  if (zoomResetBtn) {
+    zoomResetBtn.addEventListener('click', () => {
+      scale = 1;
+      pointX = 0;
+      pointY = 0;
+      updateTransform();
+    });
+  }
+
+  // Запуск проверки авторизации
   await checkUserSession();
 });

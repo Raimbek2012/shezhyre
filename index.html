@@ -26,12 +26,25 @@
 
   <main>
     <section id="tree-container">
-      <p class="instruction">Чтобы добавлять или редактировать записи, необходимо войти в аккаунт.</p>
+      <p class="instruction">Перетаскивайте удерживая мышь, используйте колесико или кнопки для масштабирования.</p>
 
-      <div class="tree">
-        <ul>
-          <!-- Древо загрузится из Supabase -->
-        </ul>
+      <!-- Панель управления масштабом -->
+      <div id="zoom-controls">
+        <button id="zoom-in" title="Увеличить">+</button>
+        <button id="zoom-out" title="Уменьшить">−</button>
+        <button id="zoom-reset" title="Сбросить масштаб">100%</button>
+      </div>
+
+      <!-- Внешняя область-просмотрщик -->
+      <div id="viewport">
+        <!-- Внутренний контейнер, который будет трансформироваться -->
+        <div id="pan-container">
+          <div class="tree">
+            <ul>
+              <!-- Древо загрузится из Supabase -->
+            </ul>
+          </div>
+        </div>
       </div>
     </section>
   </main>
