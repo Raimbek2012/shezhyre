@@ -3,15 +3,13 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ПЕРЕВОДЫ (ЯЗЫКИ: RU / KK)
 const i18n = {
   ru: {
-    app_title: "Шежире рода Ишаевых",
+    app_title: "Шежире рода",
     app_subtitle: "Генеалогическое древо и история нашей семьи",
     about_author: "Обо мне",
-    logout: "Выйти",
     lobby_welcome: "Вход в семейное шежире",
-    lobby_desc: "Для просмотра и управления семейным древом необходимо войти в систему.",
+    lobby_desc: "Введите название вашего рода и пароль. Если рода с таким названием нет, он создастся автоматически.",
     instruction: "Перетаскивайте удерживая мышь, используйте колесико или кнопки для масштабирования.",
     about_title: "Об авторе проекта",
     about_text_1: "Приветствую! Меня зовут Раимбек. Данное шежире было создано мной для сохранения и передачи истории нашего рода будущим поколениям.",
@@ -30,19 +28,15 @@ const i18n = {
     add_child_title: "Добавить потомка",
     parent_label: "Родитель:",
     child_name_label: "Имя и Фамилия ребенка:",
-    password_label: "Пароль:",
-    login_btn: "Войти",
-    no_account: "Нет аккаунта? Зарегистрироваться",
     created_by: "Создатель и разработчик сайта:",
     delete_confirm: "Вы действительно хотите удалить этого родственника?"
   },
   kk: {
-    app_title: "Ишаевтар әулетінің шежіресі",
+    app_title: "Әулет шежіресі",
     app_subtitle: "Отбасымыздың генеалогиялық ағашы мен тарихы",
     about_author: "Мен туралы",
-    logout: "Шығу",
     lobby_welcome: "Шежіреге кіру",
-    lobby_desc: "Отбасылық ағашты қарау және басқару үшін жүйеге кіріңіз.",
+    lobby_desc: "Әулетіңіздің атын және құпия сөзін енгізіңіз.",
     instruction: "Тышқанды ұстап жылжытыңыз, масштабын өзгерту үшін дөңгелекті қолданыңыз.",
     about_title: "Жоба авторы туралы",
     about_text_1: "Сәлеметсіз бе! Менің атым Райымбек. Бұл шежіре болашақ ұрпаққа әулетіміздің тарихын сақтау үшін жасалған.",
@@ -61,9 +55,6 @@ const i18n = {
     add_child_title: "Ұрпақ қосу",
     parent_label: "Ата-анасы:",
     child_name_label: "Баланың аты-жөні:",
-    password_label: "Құпия сөз:",
-    login_btn: "Кіру",
-    no_account: "Аккаунт жоқ па? Тіркелу",
     created_by: "Сайтты жасаған және әзірлеуші:",
     delete_confirm: "Бұл туысты өшіргіңіз келетініне сенімдісіз бе?"
   }
@@ -71,13 +62,33 @@ const i18n = {
 
 let currentLang = 'ru';
 let isDeleteMode = false;
-let currentUser = null;
+let currentTree = null; // Текущий выбранный род
+let currentEditorUser = null; // Пользователь-редактор с почтой
 
 document.addEventListener('DOMContentLoaded', async function () {
 
-  // Элементы переключения экрана
   const lobbyScreen = document.getElementById('lobby-screen');
   const treeMainScreen = document.getElementById('tree-main-screen');
+  const treeInfoPanel = document.getElementById('tree-info-panel');
+  const currentTreeDisplay = document.getElementById('current-tree-display');
+  const leaveTreeBtn = document.getElementById('leave-tree-btn');
+
+  // Форма входа в род
+  const treeAccessForm = document.getElementById('tree-access-form');
+  const treeNameInput = document.getElementById('tree-name-input');
+  const treePasswordInput = document.getElementById('tree-password-input');
+
+  // Авторизация редактора
+  const editorModalOverlay = document.getElementById('editor-modal-overlay');
+  const openEditorAuthBtn = document.getElementById('open-editor-auth-btn');
+  const closeEditorModalBtn = document.getElementById('close-editor-modal-btn');
+  const editorAuthForm = document.getElementById('editor-auth-form');
+  const editorEmailInput = document.getElementById('editor-email');
+  const editorPasswordInput = document.getElementById('editor-password');
+  const editorSubmitBtn = document.getElementById('editor-submit-btn');
+  const toggleEditorModeBtn = document.getElementById('toggle-editor-mode-btn');
+  const logoutEditorBtn = document.getElementById('logout-editor-btn');
+  const editorStatusText = document.getElementById('editor-status-text');
 
   // Модалка "Обо мне"
   const aboutAuthorBtn = document.getElementById('about-author-btn');
@@ -85,19 +96,15 @@ document.addEventListener('DOMContentLoaded', async function () {
   const closeAboutModalBtn = document.getElementById('close-about-modal-btn');
   const closeAboutBtn = document.getElementById('close-about-btn');
 
-  // Переключение темы
   const themeToggleBtn = document.getElementById('theme-toggle-btn');
-
-  // Языки
   const langRuBtn = document.getElementById('lang-ru-btn');
   const langKkBtn = document.getElementById('lang-kk-btn');
 
-  // Кнопки режимов
   const fabContainer = document.getElementById('fab-container');
   const toggleDeleteModeBtn = document.getElementById('toggle-delete-mode-btn');
   const addRootBtn = document.getElementById('add-root-btn');
 
-  // Модалка добавления потомка
+  // Модалка потомка
   const modalOverlay = document.getElementById('modal-overlay');
   const closeModalBtn = document.getElementById('close-modal-btn');
   const cancelBtn = document.getElementById('cancel-btn');
@@ -107,7 +114,7 @@ document.addEventListener('DOMContentLoaded', async function () {
   const childBirthInput = document.getElementById('child-birth-input');
   const childDeathInput = document.getElementById('child-death-input');
 
-  // Модалка основания
+  // Модалка основателя
   const rootModalOverlay = document.getElementById('root-modal-overlay');
   const closeRootModalBtn = document.getElementById('close-root-modal-btn');
   const cancelRootBtn = document.getElementById('cancel-root-btn');
@@ -126,130 +133,173 @@ document.addEventListener('DOMContentLoaded', async function () {
   const editBirthInput = document.getElementById('edit-birth-input');
   const editDeathInput = document.getElementById('edit-death-input');
 
-  // Форма авторизации в Лобби
-  const lobbyAuthForm = document.getElementById('lobby-auth-form');
-  const lobbyEmailInput = document.getElementById('lobby-email');
-  const lobbyPasswordInput = document.getElementById('lobby-password');
-  const lobbySubmitBtn = document.getElementById('lobby-submit-btn');
-  const toggleLobbyAuthModeBtn = document.getElementById('toggle-lobby-auth-mode-btn');
-  
-  const userView = document.getElementById('user-view');
-  const userEmailDisplay = document.getElementById('user-email-display');
-  const logoutBtn = document.getElementById('logout-btn');
-
   let currentParentId = null;
   let currentEditPersonId = null;
-  let isSignUpMode = false;
+  let isSignUpEditor = false;
 
-  // 1. СМЕНА ТЕМЫ (Светлая / Темная)
+  // 1. ТЕМА И ЯЗЫКИ
   themeToggleBtn.addEventListener('click', () => {
     document.body.classList.toggle('dark-theme');
-    const isDark = document.body.classList.contains('dark-theme');
-    themeToggleBtn.textContent = isDark ? '☀️' : '🌙';
+    themeToggleBtn.textContent = document.body.classList.contains('dark-theme') ? '☀️' : '🌙';
   });
 
-  // 2. ЯЗЫКОВАЯ ПОДДЕРЖКА (RU / KK)
   function applyLanguage(lang) {
     currentLang = lang;
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const key = el.getAttribute('data-i18n');
-      if (i18n[lang][key]) {
-        el.textContent = i18n[lang][key];
-      }
+      if (i18n[lang][key]) el.textContent = i18n[lang][key];
     });
-
-    if (lang === 'ru') {
-      langRuBtn.classList.add('active-lang');
-      langKkBtn.classList.remove('active-lang');
-    } else {
-      langKkBtn.classList.add('active-lang');
-      langRuBtn.classList.remove('active-lang');
-    }
+    langRuBtn.classList.toggle('active-lang', lang === 'ru');
+    langKkBtn.classList.toggle('active-lang', lang === 'kk');
   }
 
   langRuBtn.addEventListener('click', () => applyLanguage('ru'));
   langKkBtn.addEventListener('click', () => applyLanguage('kk'));
 
-  // 3. ОБО МНЕ
   aboutAuthorBtn.addEventListener('click', () => aboutModalOverlay.classList.remove('hidden'));
   closeAboutModalBtn.addEventListener('click', () => aboutModalOverlay.classList.add('hidden'));
   closeAboutBtn.addEventListener('click', () => aboutModalOverlay.classList.add('hidden'));
 
-  // 4. РЕЖИМ УДАЛЕНИЯ
   toggleDeleteModeBtn.addEventListener('click', () => {
     isDeleteMode = !isDeleteMode;
     toggleDeleteModeBtn.classList.toggle('active-delete-mode', isDeleteMode);
     loadTree();
   });
 
-  // 5. ПРОВЕРКА СЕССИИ И ОГРАНИЧЕНИЕ ДОСТУПА
-  async function checkUserSession() {
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    currentUser = session ? session.user : null;
-    updateAuthUI();
+  // 2. ВХОД / СОЗДАНИЕ РОДА (ИМЯ + ПАРОЛЬ)
+  treeAccessForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const treeName = treeNameInput.value.trim();
+    const treePassword = treePasswordInput.value.trim();
+
+    if (!treeName || !treePassword) return;
+
+    // Ищем род с таким именем
+    let { data: existingTree, error } = await supabaseClient
+      .from('trees')
+      .select('*')
+      .eq('name', treeName)
+      .maybeSingle();
+
+    if (error) {
+      alert('Ошибка запроса: ' + error.message);
+      return;
+    }
+
+    if (existingTree) {
+      // Род существует — проверяем пароль
+      if (existingTree.password !== treePassword) {
+        alert('Неверный пароль рода!');
+        return;
+      }
+      currentTree = existingTree;
+    } else {
+      // Рода нет — создаем новый
+      const { data: newTree, error: createError } = await supabaseClient
+        .from('trees')
+        .insert([{ name: treeName, password: treePassword }])
+        .select()
+        .single();
+
+      if (createError) {
+        alert('Ошибка создания рода: ' + createError.message);
+        return;
+      }
+      currentTree = newTree;
+      alert(`Новый род "${treeName}" успешно создан!`);
+    }
+
+    localStorage.setItem('shezhire_tree', JSON.stringify(currentTree));
+    enterTreeUI();
+  });
+
+  leaveTreeBtn.addEventListener('click', () => {
+    currentTree = null;
+    localStorage.removeItem('shezhire_tree');
+    lobbyScreen.classList.remove('hidden');
+    treeMainScreen.classList.add('hidden');
+    treeInfoPanel.classList.add('hidden');
+  });
+
+  function enterTreeUI() {
+    lobbyScreen.classList.add('hidden');
+    treeMainScreen.classList.remove('hidden');
+    treeInfoPanel.classList.remove('hidden');
+    currentTreeDisplay.textContent = `Род: ${currentTree.name}`;
+    loadTree();
+    checkEditorSession();
   }
 
-  function updateAuthUI() {
-    if (currentUser) {
-      lobbyScreen.classList.add('hidden');
-      treeMainScreen.classList.remove('hidden');
-      
-      userView.classList.remove('hidden');
-      userEmailDisplay.textContent = currentUser.email;
-      if (fabContainer) fabContainer.classList.remove('hidden');
-      loadTree();
+  // 3. АВТОРИЗАЦИЯ РЕДАКТОРА (ПОЧТА)
+  openEditorAuthBtn.addEventListener('click', () => editorModalOverlay.classList.remove('hidden'));
+  closeEditorModalBtn.addEventListener('click', () => editorModalOverlay.classList.add('hidden'));
+
+  toggleEditorModeBtn.addEventListener('click', () => {
+    isSignUpEditor = !isSignUpEditor;
+    editorSubmitBtn.textContent = isSignUpEditor ? 'Зарегистрироваться' : 'Войти как редактор';
+    toggleEditorModeBtn.textContent = isSignUpEditor ? 'Уже есть аккаунт? Войти' : 'Нет аккаунта? Зарегистрироваться';
+  });
+
+  editorAuthForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = editorEmailInput.value.trim();
+    const password = editorPasswordInput.value.trim();
+
+    if (isSignUpEditor) {
+      const { error } = await supabaseClient.auth.signUp({ email, password });
+      if (error) alert('Ошибка регистрации: ' + error.message);
+      else alert('Регистрация прошла успешно!');
     } else {
-      lobbyScreen.classList.remove('hidden');
-      treeMainScreen.classList.add('hidden');
-      
-      userView.classList.add('hidden');
-      userEmailDisplay.textContent = '';
-      if (fabContainer) fabContainer.classList.add('hidden');
+      const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+      if (error) alert('Ошибка входа: ' + error.message);
+      else editorModalOverlay.classList.add('hidden');
+    }
+  });
+
+  logoutEditorBtn.addEventListener('click', () => supabaseClient.auth.signOut());
+
+  async function checkEditorSession() {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    currentEditorUser = session ? session.user : null;
+    updateEditorUI();
+  }
+
+  function updateEditorUI() {
+    if (currentEditorUser) {
+      openEditorAuthBtn.classList.add('hidden');
+      logoutEditorBtn.classList.remove('hidden');
+      editorStatusText.textContent = `Редактор: ${currentEditorUser.email}`;
+      editorStatusText.className = 'status-badge editor';
+      fabContainer.classList.remove('hidden');
+    } else {
+      openEditorAuthBtn.classList.remove('hidden');
+      logoutEditorBtn.classList.add('hidden');
+      editorStatusText.textContent = 'Режим чтения';
+      editorStatusText.className = 'status-badge viewer';
+      fabContainer.classList.add('hidden');
       isDeleteMode = false;
     }
+    loadTree();
   }
 
   supabaseClient.auth.onAuthStateChange((_event, session) => {
-    currentUser = session ? session.user : null;
-    updateAuthUI();
+    currentEditorUser = session ? session.user : null;
+    updateEditorUI();
   });
 
-  // 6. ОБРАБОТКА ВХОДА / РЕГИСТРАЦИИ В ЛОББИ
-  if (toggleLobbyAuthModeBtn) {
-    toggleLobbyAuthModeBtn.addEventListener('click', () => {
-      isSignUpMode = !isSignUpMode;
-      lobbySubmitBtn.textContent = isSignUpMode ? 'Зарегистрироваться' : i18n[currentLang].login_btn;
-      toggleLobbyAuthModeBtn.textContent = isSignUpMode ? 'Уже есть аккаунт? Войти' : i18n[currentLang].no_account;
-    });
-  }
-
-  if (lobbyAuthForm) {
-    lobbyAuthForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = lobbyEmailInput.value.trim();
-      const password = lobbyPasswordInput.value.trim();
-
-      if (isSignUpMode) {
-        const { error } = await supabaseClient.auth.signUp({ email, password });
-        if (error) alert('Ошибка регистрации: ' + error.message);
-        else alert('Регистрация прошла успешно! Вы можете войти.');
-      } else {
-        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (error) alert('Ошибка входа: ' + error.message);
-      }
-    });
-  }
-
-  if (logoutBtn) logoutBtn.addEventListener('click', () => supabaseClient.auth.signOut());
-
-  // 7. ЗАГРУЗКА И ПОСТРОЕНИЕ ДРЕВА
+  // 4. ЗАГРУЗКА ДРЕВА ТЕКУЩЕГО РОДА
   async function loadTree() {
+    if (!currentTree) return;
     const treeContainer = document.querySelector('.tree > ul');
     if (!treeContainer) return;
-    
+
     treeContainer.innerHTML = '<li>Загрузка...</li>';
 
-    const { data: people, error } = await supabaseClient.from('people').select('*');
+    // Загружаем ЛЮДЕЙ ТОЛЬКО ТЕКУЩЕГО РОДА
+    const { data: people, error } = await supabaseClient
+      .from('people')
+      .select('*')
+      .eq('tree_id', currentTree.id);
 
     if (error) {
       console.error(error);
@@ -262,11 +312,10 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     if (rootPeople.length > 0) {
       rootPeople.forEach(rootPerson => {
-        const rootElement = createPersonElement(rootPerson, people);
-        treeContainer.appendChild(rootElement);
+        treeContainer.appendChild(createPersonElement(rootPerson, people));
       });
     } else {
-      treeContainer.innerHTML = '<li>Нет основателей. Нажмите "+" внизу экрана.</li>';
+      treeContainer.innerHTML = '<li>В этом роду пока нет записей. Авторизуйтесь через почту, чтобы добавить основателя.</li>';
     }
   }
 
@@ -277,7 +326,8 @@ document.addEventListener('DOMContentLoaded', async function () {
     const hasChildren = children.length > 0;
 
     let actionButtonsHTML = '';
-    if (currentUser) {
+    // Кнопки управления выводим ТОЛЬКО ЕСЛИ ПОЛЬЗОВАТЕЛЬ ВОШЁЛ КАК РЕДАКТОР ПО ПОЧТЕ
+    if (currentEditorUser) {
       if (isDeleteMode) {
         actionButtonsHTML = `<button class="delete-card-btn" title="Удалить">🗑️</button>`;
       } else {
@@ -323,13 +373,10 @@ document.addEventListener('DOMContentLoaded', async function () {
     return li;
   }
 
-  // СВОРАЧИВАНИЕ И РАЗВОРАЧИВАНИЕ ПОТОМКОВ (С ПОДДЕРЖКОЙ ИЕРАРХИЧЕСКОГО СБРОСА)
+  // 5. РАЗВОРАЧИВАНИЕ / СВОРАЧИВАНИЕ
   document.addEventListener('click', function (event) {
     const card = event.target.closest('.person-card');
-    if (!card) return;
-
-    // Если кликнули по кнопкам управления (добавить, изменить, удалить) — сворачивание не срабатывает
-    if (event.target.closest('.action-btns')) return;
+    if (!card || event.target.closest('.action-btns')) return;
 
     const li = card.closest('li');
     const directChildrenUl = li.querySelector(':scope > ul.children');
@@ -339,11 +386,9 @@ document.addEventListener('DOMContentLoaded', async function () {
       const isCurrentlyCollapsed = directChildrenUl.classList.contains('collapsed');
 
       if (isCurrentlyCollapsed) {
-        // РАЗВОРАЧИВАНИЕ: Открываем только ПРЯМЫХ ДЕТЕЙ первого уровня
         directChildrenUl.classList.remove('collapsed');
         if (toggleIcon) toggleIcon.textContent = '[−]';
       } else {
-        // СВОРАЧИВАНИЕ: Сворачиваем родителя И ВСЕХ его потомков на всех уровнях
         const allSubLists = li.querySelectorAll('ul.children');
         allSubLists.forEach(subUl => subUl.classList.add('collapsed'));
 
@@ -365,19 +410,15 @@ document.addEventListener('DOMContentLoaded', async function () {
     const viewportCenterX = viewportRect.left + viewportRect.width / 2;
     const viewportCenterY = viewportRect.top + viewportRect.height / 2;
 
-    const deltaX = viewportCenterX - elementCenterX;
-    const deltaY = viewportCenterY - elementCenterY;
-
-    pointX += deltaX;
-    pointY += deltaY;
+    pointX += viewportCenterX - elementCenterX;
+    pointY += viewportCenterY - elementCenterY;
     updateTransform();
   }
 
-  // 8. УДАЛЕНИЕ РОДСТВЕННИКА
+  // 6. ОПЕРАЦИИ С БАЗОЙ (ДОБАВЛЕНИЕ / ИЗМЕНЕНИЕ / УДАЛЕНИЕ)
   document.addEventListener('click', async function (event) {
     if (event.target.classList.contains('delete-card-btn')) {
-      const parentCard = event.target.closest('.person-card');
-      const id = parentCard.getAttribute('data-id');
+      const id = event.target.closest('.person-card').getAttribute('data-id');
 
       if (confirm(i18n[currentLang].delete_confirm)) {
         const { error } = await supabaseClient.from('people').delete().eq('id', id);
@@ -387,7 +428,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     }
   });
 
-  // 9. СОЗДАНИЕ ОСНОВАТЕЛЯ РОДА
+  // Добавление основателя
   if (addRootBtn) addRootBtn.addEventListener('click', () => rootModalOverlay.classList.remove('hidden'));
   
   function closeRootModal() {
@@ -407,11 +448,11 @@ document.addEventListener('DOMContentLoaded', async function () {
       const birth_year = rootBirthInput.value.trim();
       const death_year = rootDeathInput.value.trim();
 
-      if (!name) return;
+      if (!name || !currentTree) return;
 
       const { error } = await supabaseClient
         .from('people')
-        .insert([{ name, parent_id: null, birth_year, death_year }]);
+        .insert([{ name, parent_id: null, tree_id: currentTree.id, birth_year, death_year }]);
 
       if (error) alert('Ошибка создания: ' + error.message);
       else {
@@ -421,7 +462,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   }
 
-  // 10. РЕДАКТИРОВАНИЕ
+  // Редактирование
   document.addEventListener('click', function (event) {
     if (event.target.classList.contains('edit-btn')) {
       const parentCard = event.target.closest('.person-card');
@@ -438,10 +479,6 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   function closeEditModal() {
     editModalOverlay.classList.add('hidden');
-    editNameInput.value = '';
-    editSpouseInput.value = '';
-    editBirthInput.value = '';
-    editDeathInput.value = '';
     currentEditPersonId = null;
   }
 
@@ -471,7 +508,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   }
 
-  // 11. ДОБАВЛЕНИЕ ПОТОМКА
+  // Добавление потомка
   document.addEventListener('click', function (event) {
     if (event.target.classList.contains('add-child-btn')) {
       const parentCard = event.target.closest('.person-card');
@@ -485,9 +522,6 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   function closeModal() {
     modalOverlay.classList.add('hidden');
-    childNameInput.value = '';
-    childBirthInput.value = '';
-    childDeathInput.value = '';
     currentParentId = null;
   }
 
@@ -501,11 +535,11 @@ document.addEventListener('DOMContentLoaded', async function () {
       const birth_year = childBirthInput.value.trim();
       const death_year = childDeathInput.value.trim();
 
-      if (!name || !currentParentId) return;
+      if (!name || !currentParentId || !currentTree) return;
 
       const { error } = await supabaseClient
         .from('people')
-        .insert([{ name, parent_id: parseInt(currentParentId), birth_year, death_year }]);
+        .insert([{ name, parent_id: parseInt(currentParentId), tree_id: currentTree.id, birth_year, death_year }]);
 
       if (error) alert('Ошибка сохранения: ' + error.message);
       else {
@@ -515,7 +549,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   }
 
-  // 12. МАСШТАБИРОВАНИЕ И ПЕРЕТАСКИВАНИЕ
+  // 7. МАСШТАБИРОВАНИЕ
   const viewport = document.getElementById('viewport');
   const panContainer = document.getElementById('pan-container');
   const zoomInBtn = document.getElementById('zoom-in');
@@ -528,7 +562,6 @@ document.addEventListener('DOMContentLoaded', async function () {
   let startX = 0;
   let startY = 0;
   let isDragging = false;
-  let initialPinchDistance = null;
 
   function updateTransform() {
     if (panContainer) {
@@ -565,55 +598,16 @@ document.addEventListener('DOMContentLoaded', async function () {
       pointY = e.clientY - ys * scale;
       updateTransform();
     }, { passive: false });
-
-    // Сенсорные экраны
-    viewport.addEventListener('touchstart', (e) => {
-      if (e.target.closest('.person-card') || e.target.closest('#zoom-controls')) return;
-
-      if (e.touches.length === 1) {
-        isDragging = true;
-        startX = e.touches[0].clientX - pointX;
-        startY = e.touches[0].clientY - pointY;
-      } else if (e.touches.length === 2) {
-        isDragging = false;
-        initialPinchDistance = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-      }
-    }, { passive: false });
-
-    viewport.addEventListener('touchmove', (e) => {
-      if (e.target.closest('#zoom-controls')) return;
-
-      if (e.touches.length === 1 && isDragging) {
-        e.preventDefault();
-        pointX = e.touches[0].clientX - startX;
-        pointY = e.touches[0].clientY - startY;
-        updateTransform();
-      } else if (e.touches.length === 2 && initialPinchDistance) {
-        e.preventDefault();
-        const currentDistance = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        );
-
-        const factor = currentDistance / initialPinchDistance;
-        scale = Math.min(Math.max(scale * factor, 0.3), 3);
-        initialPinchDistance = currentDistance;
-        updateTransform();
-      }
-    }, { passive: false });
-
-    viewport.addEventListener('touchend', (e) => {
-      if (e.touches.length < 2) initialPinchDistance = null;
-      if (e.touches.length === 0) isDragging = false;
-    });
   }
 
   if (zoomInBtn) zoomInBtn.addEventListener('click', () => { scale = Math.min(scale * 1.2, 3); updateTransform(); });
   if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => { scale = Math.max(scale / 1.2, 0.3); updateTransform(); });
   if (zoomResetBtn) zoomResetBtn.addEventListener('click', () => { scale = 1; pointX = 0; pointY = 0; updateTransform(); });
 
-  await checkUserSession();
+  // Загружаем род из памяти при открытии страницы, если он был выбран
+  const savedTree = localStorage.getItem('shezhire_tree');
+  if (savedTree) {
+    currentTree = JSON.parse(savedTree);
+    enterTreeUI();
+  }
 });

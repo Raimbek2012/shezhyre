@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Шежире рода Ишаевых</title>
+  <title>Шежире — Семейное древо</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="light-theme">
 
   <header>
     <div class="header-content">
-      <h1 id="app-title" data-i18n="app_title">Шежире рода Ишаевых</h1>
+      <h1 id="app-title" data-i18n="app_title">Шежире рода</h1>
       <p id="app-subtitle" data-i18n="app_subtitle">Генеалогическое древо и история нашей семьи</p>
     </div>
 
-    <!-- Верхняя панель управления: Переключатель языков, темы, кнопка "Обо мне" -->
+    <!-- Верхняя панель управления -->
     <div class="top-controls">
       <div class="lang-switch">
         <button id="lang-ru-btn" class="active-lang">RU</button>
@@ -24,42 +24,47 @@
       <button id="theme-toggle-btn" class="btn btn-outline-icon" title="Сменить тему">🌙</button>
       <button id="about-author-btn" class="btn btn-outline" data-i18n="about_author">Обо мне</button>
 
-      <!-- Панель пользователя (видна только после входа) -->
-      <div id="auth-panel" class="auth-panel">
-        <div id="user-view" class="hidden">
-          <span id="user-email-display"></span>
-          <button id="logout-btn" class="btn btn-small" data-i18n="logout">Выйти</button>
+      <!-- Панель управления родом и авторизцией -->
+      <div id="tree-info-panel" class="auth-panel hidden">
+        <span id="current-tree-display" class="tree-badge"></span>
+        
+        <!-- Блок авторизации почты для прав редактирования -->
+        <div id="editor-auth-box">
+          <span id="editor-status-text" class="status-badge viewer">Режим чтения</span>
+          <button id="open-editor-auth-btn" class="btn btn-small btn-primary">Войти как редактор</button>
+          <button id="logout-editor-btn" class="btn btn-small hidden">Выйти из редактора</button>
         </div>
+
+        <button id="leave-tree-btn" class="btn btn-small btn-secondary">Сменить род</button>
       </div>
     </div>
   </header>
 
-  <!-- ЕДИНСТВЕННЫЙ ЭКРАН ВХОДА (ОБЯЗАТЕЛЬНЫЙ ВХОД ДЛЯ ВСЕХ) -->
+  <!-- ЭКРАН ВХОДА В РОД (Имя рода + Пароль) -->
   <section id="lobby-screen" class="lobby-container">
     <div class="lobby-card">
       <h2 data-i18n="lobby_welcome">Вход в семейное шежире</h2>
-      <p data-i18n="lobby_desc">Для просмотра и управления семейным древом необходимо войти в систему.</p>
+      <p data-i18n="lobby_desc">Введите название вашего рода и пароль. Если рода с таким названием нет, он создастся автоматически.</p>
 
-      <form id="lobby-auth-form">
+      <form id="tree-access-form">
         <div class="form-group">
-          <label for="lobby-email">Email:</label>
-          <input type="email" id="lobby-email" placeholder="example@mail.com" required>
+          <label for="tree-name-input">Название рода / Фамилия:</label>
+          <input type="text" id="tree-name-input" placeholder="Например: Ишаевы" required>
         </div>
 
         <div class="form-group">
-          <label for="lobby-password" data-i18n="password_label">Пароль:</label>
-          <input type="password" id="lobby-password" placeholder="Пароль" required minlength="6">
+          <label for="tree-password-input">Пароль рода:</label>
+          <input type="password" id="tree-password-input" placeholder="Пароль для доступа к роду" required>
         </div>
 
         <div class="form-actions-stack">
-          <button type="submit" id="lobby-submit-btn" class="btn btn-primary" data-i18n="login_btn">Войти</button>
-          <button type="button" id="toggle-lobby-auth-mode-btn" class="btn-link" data-i18n="no_account">Нет аккаунта? Зарегистрироваться</button>
+          <button type="submit" class="btn btn-primary">Войти / Создать род</button>
         </div>
       </form>
     </div>
   </section>
 
-  <!-- ОСНОВНОЙ ЭКРАН С ДРЕВОМ (Доступен только ПОСЛЕ входа) -->
+  <!-- ОСНОВНОЙ ЭКРАН С ДРЕВОМ -->
   <main id="tree-main-screen" class="hidden">
     <section id="tree-container">
       <p class="instruction" data-i18n="instruction">Перетаскивайте удерживая мышь, используйте колесико или кнопки для масштабирования.</p>
@@ -84,20 +89,46 @@
     </section>
   </main>
 
-  <!-- Панель кнопок быстрых действий для авторизованных пользователей -->
+  <!-- Панель кнопок быстрых действий (Видна ТОЛЬКО для редакторов с почтой) -->
   <div id="fab-container" class="hidden">
     <button id="toggle-delete-mode-btn" class="fab-btn fab-delete" title="Режим удаления">🗑️</button>
     <button id="add-root-btn" class="fab-btn fab-add" title="Добавить нового основателя">+</button>
   </div>
 
-  <!-- Модальное окно: "Обо мне" (Биография автора) -->
+  <!-- Модалка: Авторизация почты редактора -->
+  <div id="editor-modal-overlay" class="modal-overlay hidden">
+    <div class="modal">
+      <button id="close-editor-modal-btn" class="close-btn">&times;</button>
+      <h3>Авторизация редактора</h3>
+      <p>Для внесения изменений в древо (добавление, редактирование, удаление) необходимо привязать вашу электронную почту.</p>
+
+      <form id="editor-auth-form">
+        <div class="form-group">
+          <label for="editor-email">Email:</label>
+          <input type="email" id="editor-email" placeholder="example@mail.com" required>
+        </div>
+
+        <div class="form-group">
+          <label for="editor-password">Пароль аккаунта:</label>
+          <input type="password" id="editor-password" placeholder="Пароль" required minlength="6">
+        </div>
+
+        <div class="form-actions-stack">
+          <button type="submit" id="editor-submit-btn" class="btn btn-primary">Войти как редактор</button>
+          <button type="button" id="toggle-editor-mode-btn" class="btn-link">Нет аккаунта? Зарегистрироваться</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Модалка: Об авторе -->
   <div id="about-modal-overlay" class="modal-overlay hidden">
     <div class="modal">
       <button id="close-about-modal-btn" class="close-btn">&times;</button>
       <h3 data-i18n="about_title">Об авторе проекта</h3>
       <div class="about-content">
-        <p id="about-text-1" data-i18n="about_text_1">Приветствую! Данное шежире было создано мной для сохранения и передачи истории нашего рода будущим поколениям.</p>
-        <p id="about-text-2" data-i18n="about_text_2">Здесь вы можете изучать семейные связи, узнавать о своих предках и вносить новых членов нашей большой семьи.</p>
+        <p id="about-text-1" data-i18n="about_text_1">Приветствую! Меня зовут Раимбек. Данное шежире было создано мной для сохранения и передачи истории нашего рода будущим поколениям.</p>
+        <p id="about-text-2" data-i18n="about_text_2">Здесь вы можете изучать семейные связи, узнавать о своих предках и вносить новых членов нашей семьи.</p>
       </div>
       <div class="form-actions">
         <button type="button" id="close-about-btn" class="btn btn-primary" data-i18n="close">Закрыть</button>
@@ -105,7 +136,7 @@
     </div>
   </div>
 
-  <!-- Модальное окно: Добавление основателя -->
+  <!-- Модалка: Добавление основателя -->
   <div id="root-modal-overlay" class="modal-overlay hidden">
     <div class="modal">
       <button id="close-root-modal-btn" class="close-btn">&times;</button>
@@ -135,7 +166,7 @@
     </div>
   </div>
 
-  <!-- Модальное окно: Редактирование карточки -->
+  <!-- Модалка: Редактирование -->
   <div id="edit-modal-overlay" class="modal-overlay hidden">
     <div class="modal">
       <button id="close-edit-modal-btn" class="close-btn">&times;</button>
@@ -171,7 +202,7 @@
     </div>
   </div>
 
-  <!-- Модальное окно: Добавление потомка -->
+  <!-- Модалка: Добавление потомка -->
   <div id="modal-overlay" class="modal-overlay hidden">
     <div class="modal">
       <button id="close-modal-btn" class="close-btn">&times;</button>
@@ -208,7 +239,7 @@
   </div>
 
   <footer>
-    <p>© <span id="footer-text">Шежире рода Ишаевых</span> | <span data-i18n="created_by">Создатель и разработчик сайта:</span> <strong>Ишаев Раимбек</strong></p>
+    <p>© <span id="footer-text">Шежире</span> | <span data-i18n="created_by">Создатель и разработчик сайта:</span> <strong>Ишаев Раимбек</strong></p>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
