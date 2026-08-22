@@ -191,7 +191,6 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   function updateAuthUI() {
     if (currentUser) {
-      // Пользователь вошел -> показываем Древо, скрываем Лобби
       lobbyScreen.classList.add('hidden');
       treeMainScreen.classList.remove('hidden');
       
@@ -200,7 +199,6 @@ document.addEventListener('DOMContentLoaded', async function () {
       if (fabContainer) fabContainer.classList.remove('hidden');
       loadTree();
     } else {
-      // Пользователь НЕ вошел -> показываем Лобби входа, скрываем Древо
       lobbyScreen.classList.remove('hidden');
       treeMainScreen.classList.add('hidden');
       
@@ -325,11 +323,12 @@ document.addEventListener('DOMContentLoaded', async function () {
     return li;
   }
 
-  // СВОРАЧИВАНИЕ / РАЗВОРАЧИВАНИЕ И ФОКУСИРОВКА НА КАРТОЧКЕ
+  // СВОРАЧИВАНИЕ И РАЗВОРАЧИВАНИЕ ПОТОМКОВ ПРИ КЛИКЕ
   document.addEventListener('click', function (event) {
     const card = event.target.closest('.person-card');
     if (!card) return;
 
+    // Если кликнули по кнопкам действия — сворачивание не срабатывает
     if (event.target.closest('.action-btns')) return;
 
     const li = card.closest('li');
@@ -337,10 +336,16 @@ document.addEventListener('DOMContentLoaded', async function () {
     const toggleIcon = card.querySelector('.toggle-icon');
 
     if (childrenUl) {
-      childrenUl.classList.toggle('collapsed');
-      const isCollapsed = childrenUl.classList.contains('collapsed');
-      if (toggleIcon) {
-        toggleIcon.textContent = isCollapsed ? '[+]' : '[−]';
+      const isCurrentlyCollapsed = childrenUl.classList.contains('collapsed');
+
+      if (isCurrentlyCollapsed) {
+        // РАЗВОРАЧИВАНИЕ: Показываем список potomkov обратно
+        childrenUl.classList.remove('collapsed');
+        if (toggleIcon) toggleIcon.textContent = '[−]';
+      } else {
+        // СВОРАЧИВАНИЕ: Скрываем список потомков
+        childrenUl.classList.add('collapsed');
+        if (toggleIcon) toggleIcon.textContent = '[+]';
       }
     }
 
