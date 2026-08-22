@@ -14,7 +14,7 @@ const i18n = {
     lobby_desc: "Для просмотра и управления семейным древом необходимо войти в систему.",
     instruction: "Перетаскивайте удерживая мышь, используйте колесико или кнопки для масштабирования.",
     about_title: "Об авторе проекта",
-    about_text_1: "Приветствую! Данное шежире было создано мной для сохранения и передачи истории нашего рода будущим поколениям.",
+    about_text_1: "Приветствую! Меня зовут Раимбек. Данное шежире было создано мной для сохранения и передачи истории нашего рода будущим поколениям.",
     about_text_2: "Здесь вы можете изучать семейные связи, узнавать о своих предках и вносить новых членов нашей семьи.",
     close: "Закрыть",
     add_root_title: "Добавить новый род / основателя",
@@ -45,7 +45,7 @@ const i18n = {
     lobby_desc: "Отбасылық ағашты қарау және басқару үшін жүйеге кіріңіз.",
     instruction: "Тышқанды ұстап жылжытыңыз, масштабын өзгерту үшін дөңгелекті қолданыңыз.",
     about_title: "Жоба авторы туралы",
-    about_text_1: "Сәлеметсіз бе! Бұл шежіре болашақ ұрпаққа әулетіміздің тарихын сақтау үшін жасалған.",
+    about_text_1: "Сәлеметсіз бе! Менің атым Райымбек. Бұл шежіре болашақ ұрпаққа әулетіміздің тарихын сақтау үшін жасалған.",
     about_text_2: "Мұнда сіз отбасылық байланыстарды зерттеп, бабаларыңыз туралы біле аласыз.",
     close: "Жабу",
     add_root_title: "Жаңа атаны / әулетті қосу",
@@ -323,29 +323,32 @@ document.addEventListener('DOMContentLoaded', async function () {
     return li;
   }
 
-  // СВОРАЧИВАНИЕ И РАЗВОРАЧИВАНИЕ ПОТОМКОВ ПРИ КЛИКЕ
+  // СВОРАЧИВАНИЕ И РАЗВОРАЧИВАНИЕ ПОТОМКОВ (С ПОДДЕРЖКОЙ ИЕРАРХИЧЕСКОГО СБРОСА)
   document.addEventListener('click', function (event) {
     const card = event.target.closest('.person-card');
     if (!card) return;
 
-    // Если кликнули по кнопкам действия — сворачивание не срабатывает
+    // Если кликнули по кнопкам управления (добавить, изменить, удалить) — сворачивание не срабатывает
     if (event.target.closest('.action-btns')) return;
 
     const li = card.closest('li');
-    const childrenUl = li.querySelector(':scope > ul.children');
+    const directChildrenUl = li.querySelector(':scope > ul.children');
     const toggleIcon = card.querySelector('.toggle-icon');
 
-    if (childrenUl) {
-      const isCurrentlyCollapsed = childrenUl.classList.contains('collapsed');
+    if (directChildrenUl) {
+      const isCurrentlyCollapsed = directChildrenUl.classList.contains('collapsed');
 
       if (isCurrentlyCollapsed) {
-        // РАЗВОРАЧИВАНИЕ: Показываем список potomkov обратно
-        childrenUl.classList.remove('collapsed');
+        // РАЗВОРАЧИВАНИЕ: Открываем только ПРЯМЫХ ДЕТЕЙ первого уровня
+        directChildrenUl.classList.remove('collapsed');
         if (toggleIcon) toggleIcon.textContent = '[−]';
       } else {
-        // СВОРАЧИВАНИЕ: Скрываем список потомков
-        childrenUl.classList.add('collapsed');
-        if (toggleIcon) toggleIcon.textContent = '[+]';
+        // СВОРАЧИВАНИЕ: Сворачиваем родителя И ВСЕХ его потомков на всех уровнях
+        const allSubLists = li.querySelectorAll('ul.children');
+        allSubLists.forEach(subUl => subUl.classList.add('collapsed'));
+
+        const allToggleIcons = li.querySelectorAll('.toggle-icon');
+        allToggleIcons.forEach(icon => icon.textContent = '[+]');
       }
     }
 
