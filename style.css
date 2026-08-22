@@ -159,7 +159,7 @@ header {
   margin-top: 10px;
 }
 
-/* ЛОББИ */
+/* ЛОББИ С ФОРМОЙ ВХОДА */
 .lobby-container {
   display: flex;
   justify-content: center;
@@ -174,26 +174,21 @@ header {
   border-radius: 12px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
   text-align: center;
-  max-width: 450px;
+  max-width: 400px;
   width: 100%;
 }
 
 .lobby-card h2 {
-  margin-bottom: 15px;
-  font-size: 1.6rem;
+  margin-bottom: 10px;
+  font-size: 1.5rem;
 }
 
 .lobby-card p {
-  margin-bottom: 25px;
+  margin-bottom: 20px;
   color: var(--text-main);
   opacity: 0.8;
+  font-size: 0.9rem;
   line-height: 1.4;
-}
-
-#lobby-actions {
-  display: flex;
-  gap: 15px;
-  justify-content: center;
 }
 
 /* Древо контейнер */
@@ -496,6 +491,7 @@ header {
 
 .form-group {
   margin-bottom: 15px;
+  text-align: left;
 }
 
 .form-group.row-inputs {

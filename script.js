@@ -9,11 +9,9 @@ const i18n = {
     app_title: "Шежире рода Ишаевых",
     app_subtitle: "Генеалогическое древо и история нашей семьи",
     about_author: "Обо мне",
-    login_register: "Войти / Регистрация",
     logout: "Выйти",
-    lobby_welcome: "Добро пожаловать в Шежире",
-    lobby_desc: "Авторизуйтесь, чтобы начать управление семейным древом, или выберите просмотр древа.",
-    view_tree: "Смотреть древо",
+    lobby_welcome: "Вход в семейное шежире",
+    lobby_desc: "Для просмотра и управления семейным древом необходимо войти в систему.",
     instruction: "Перетаскивайте удерживая мышь, используйте колесико или кнопки для масштабирования.",
     about_title: "Об авторе проекта",
     about_text_1: "Приветствую! Данное шежире было создано мной для сохранения и передачи истории нашего рода будущим поколениям.",
@@ -32,7 +30,6 @@ const i18n = {
     add_child_title: "Добавить потомка",
     parent_label: "Родитель:",
     child_name_label: "Имя и Фамилия ребенка:",
-    login_title: "Вход в систему",
     password_label: "Пароль:",
     login_btn: "Войти",
     no_account: "Нет аккаунта? Зарегистрироваться",
@@ -43,14 +40,12 @@ const i18n = {
     app_title: "Ишаевтар әулетінің шежіресі",
     app_subtitle: "Отбасымыздың генеалогиялық ағашы мен тарихы",
     about_author: "Мен туралы",
-    login_register: "Киру / Тіркелу",
     logout: "Шығу",
-    lobby_welcome: "Шежіреге кош келдіңіз",
-    lobby_desc: "Отбасылық ағашты басқару үшін жүйеге кіріңіз немесе ағашты қарауды таңдаңыз.",
-    view_tree: "Ағашты қарау",
+    lobby_welcome: "Шежіреге кіру",
+    lobby_desc: "Отбасылық ағашты қарау және басқару үшін жүйеге кіріңіз.",
     instruction: "Тышқанды ұстап жылжытыңыз, масштабын өзгерту үшін дөңгелекті қолданыңыз.",
     about_title: "Жоба авторы туралы",
-    about_text_1: "Сәлеметсіз бе! Бул шежіре болашақ ұрпаққа әулетіміздің тарихын сақтау үшін жасалған.",
+    about_text_1: "Сәлеметсіз бе! Бұл шежіре болашақ ұрпаққа әулетіміздің тарихын сақтау үшін жасалған.",
     about_text_2: "Мұнда сіз отбасылық байланыстарды зерттеп, бабаларыңыз туралы біле аласыз.",
     close: "Жабу",
     add_root_title: "Жаңа атаны / әулетті қосу",
@@ -66,7 +61,6 @@ const i18n = {
     add_child_title: "Ұрпақ қосу",
     parent_label: "Ата-анасы:",
     child_name_label: "Баланың аты-жөні:",
-    login_title: "Жүйеге кіру",
     password_label: "Құпия сөз:",
     login_btn: "Кіру",
     no_account: "Аккаунт жоқ па? Тіркелу",
@@ -84,8 +78,6 @@ document.addEventListener('DOMContentLoaded', async function () {
   // Элементы переключения экрана
   const lobbyScreen = document.getElementById('lobby-screen');
   const treeMainScreen = document.getElementById('tree-main-screen');
-  const lobbyViewTreeBtn = document.getElementById('lobby-view-tree-btn');
-  const lobbyLoginBtn = document.getElementById('lobby-login-btn');
 
   // Модалка "Обо мне"
   const aboutAuthorBtn = document.getElementById('about-author-btn');
@@ -134,17 +126,13 @@ document.addEventListener('DOMContentLoaded', async function () {
   const editBirthInput = document.getElementById('edit-birth-input');
   const editDeathInput = document.getElementById('edit-death-input');
 
-  // Авторизация
-  const authModalOverlay = document.getElementById('auth-modal-overlay');
-  const openAuthModalBtn = document.getElementById('open-auth-modal-btn');
-  const closeAuthModalBtn = document.getElementById('close-auth-modal-btn');
-  const authForm = document.getElementById('auth-form');
-  const authEmailInput = document.getElementById('auth-email');
-  const authPasswordInput = document.getElementById('auth-password');
-  const authSubmitBtn = document.getElementById('auth-submit-btn');
-  const toggleAuthModeBtn = document.getElementById('toggle-auth-mode-btn');
-  const authTitle = document.getElementById('auth-title');
-  const guestView = document.getElementById('guest-view');
+  // Форма авторизации в Лобби
+  const lobbyAuthForm = document.getElementById('lobby-auth-form');
+  const lobbyEmailInput = document.getElementById('lobby-email');
+  const lobbyPasswordInput = document.getElementById('lobby-password');
+  const lobbySubmitBtn = document.getElementById('lobby-submit-btn');
+  const toggleLobbyAuthModeBtn = document.getElementById('toggle-lobby-auth-mode-btn');
+  
   const userView = document.getElementById('user-view');
   const userEmailDisplay = document.getElementById('user-email-display');
   const logoutBtn = document.getElementById('logout-btn');
@@ -182,28 +170,19 @@ document.addEventListener('DOMContentLoaded', async function () {
   langRuBtn.addEventListener('click', () => applyLanguage('ru'));
   langKkBtn.addEventListener('click', () => applyLanguage('kk'));
 
-  // 3. ЭКРАН ЛОББИ И ПЕРЕХОД К ДРЕВУ
-  function openTreeScreen() {
-    lobbyScreen.classList.add('hidden');
-    treeMainScreen.classList.remove('hidden');
-  }
-
-  lobbyViewTreeBtn.addEventListener('click', openTreeScreen);
-  lobbyLoginBtn.addEventListener('click', () => authModalOverlay.classList.remove('hidden'));
-
-  // 4. ОБО МНЕ
+  // 3. ОБО МНЕ
   aboutAuthorBtn.addEventListener('click', () => aboutModalOverlay.classList.remove('hidden'));
   closeAboutModalBtn.addEventListener('click', () => aboutModalOverlay.classList.add('hidden'));
   closeAboutBtn.addEventListener('click', () => aboutModalOverlay.classList.add('hidden'));
 
-  // 5. РЕЖИМ УДАЛЕНИЯ
+  // 4. РЕЖИМ УДАЛЕНИЯ
   toggleDeleteModeBtn.addEventListener('click', () => {
     isDeleteMode = !isDeleteMode;
     toggleDeleteModeBtn.classList.toggle('active-delete-mode', isDeleteMode);
     loadTree();
   });
 
-  // 6. ПРОВЕРКА СЕССИИ
+  // 5. ПРОВЕРКА СЕССИИ И ОГРАНИЧЕНИЕ ДОСТУПА
   async function checkUserSession() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     currentUser = session ? session.user : null;
@@ -212,24 +191,58 @@ document.addEventListener('DOMContentLoaded', async function () {
 
   function updateAuthUI() {
     if (currentUser) {
-      guestView.classList.add('hidden');
+      // Пользователь вошел -> показываем Древо, скрываем Лобби
+      lobbyScreen.classList.add('hidden');
+      treeMainScreen.classList.remove('hidden');
+      
       userView.classList.remove('hidden');
       userEmailDisplay.textContent = currentUser.email;
       if (fabContainer) fabContainer.classList.remove('hidden');
+      loadTree();
     } else {
-      guestView.classList.remove('hidden');
+      // Пользователь НЕ вошел -> показываем Лобби входа, скрываем Древо
+      lobbyScreen.classList.remove('hidden');
+      treeMainScreen.classList.add('hidden');
+      
       userView.classList.add('hidden');
       userEmailDisplay.textContent = '';
       if (fabContainer) fabContainer.classList.add('hidden');
       isDeleteMode = false;
     }
-    loadTree();
   }
 
   supabaseClient.auth.onAuthStateChange((_event, session) => {
     currentUser = session ? session.user : null;
     updateAuthUI();
   });
+
+  // 6. ОБРАБОТКА ВХОДА / РЕГИСТРАЦИИ В ЛОББИ
+  if (toggleLobbyAuthModeBtn) {
+    toggleLobbyAuthModeBtn.addEventListener('click', () => {
+      isSignUpMode = !isSignUpMode;
+      lobbySubmitBtn.textContent = isSignUpMode ? 'Зарегистрироваться' : i18n[currentLang].login_btn;
+      toggleLobbyAuthModeBtn.textContent = isSignUpMode ? 'Уже есть аккаунт? Войти' : i18n[currentLang].no_account;
+    });
+  }
+
+  if (lobbyAuthForm) {
+    lobbyAuthForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = lobbyEmailInput.value.trim();
+      const password = lobbyPasswordInput.value.trim();
+
+      if (isSignUpMode) {
+        const { error } = await supabaseClient.auth.signUp({ email, password });
+        if (error) alert('Ошибка регистрации: ' + error.message);
+        else alert('Регистрация прошла успешно! Вы можете войти.');
+      } else {
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) alert('Ошибка входа: ' + error.message);
+      }
+    });
+  }
+
+  if (logoutBtn) logoutBtn.addEventListener('click', () => supabaseClient.auth.signOut());
 
   // 7. ЗАГРУЗКА И ПОСТРОЕНИЕ ДРЕВА
   async function loadTree() {
@@ -317,7 +330,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     const card = event.target.closest('.person-card');
     if (!card) return;
 
-    // Если кликнули на кнопки редактирования/удаления — пропускаем
     if (event.target.closest('.action-btns')) return;
 
     const li = card.closest('li');
@@ -332,11 +344,9 @@ document.addEventListener('DOMContentLoaded', async function () {
       }
     }
 
-    // Фокусировка экрана на выбранной карте
     focusOnElement(card);
   });
 
-  // Функция фокусировки
   function focusOnElement(element) {
     const rect = element.getBoundingClientRect();
     const viewportRect = viewport.getBoundingClientRect();
@@ -497,47 +507,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   }
 
-  // 12. АВТОРИЗАЦИЯ
-  if (openAuthModalBtn) openAuthModalBtn.addEventListener('click', () => authModalOverlay.classList.remove('hidden'));
-  if (closeAuthModalBtn) closeAuthModalBtn.addEventListener('click', () => authModalOverlay.classList.add('hidden'));
-
-  if (toggleAuthModeBtn) {
-    toggleAuthModeBtn.addEventListener('click', () => {
-      isSignUpMode = !isSignUpMode;
-      authTitle.textContent = isSignUpMode ? i18n[currentLang].no_account : i18n[currentLang].login_title;
-      authSubmitBtn.textContent = isSignUpMode ? 'Зарегистрироваться' : i18n[currentLang].login_btn;
-      toggleAuthModeBtn.textContent = isSignUpMode ? 'Уже есть аккаунт? Войти' : i18n[currentLang].no_account;
-    });
-  }
-
-  if (authForm) {
-    authForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const email = authEmailInput.value.trim();
-      const password = authPasswordInput.value.trim();
-
-      if (isSignUpMode) {
-        const { error } = await supabaseClient.auth.signUp({ email, password });
-        if (error) alert('Ошибка: ' + error.message);
-        else {
-          alert('Регистрация успешна!');
-          authModalOverlay.classList.add('hidden');
-          openTreeScreen();
-        }
-      } else {
-        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (error) alert('Ошибка: ' + error.message);
-        else {
-          authModalOverlay.classList.add('hidden');
-          openTreeScreen();
-        }
-      }
-    });
-  }
-
-  if (logoutBtn) logoutBtn.addEventListener('click', () => supabaseClient.auth.signOut());
-
-  // 13. МАСШТАБИРОВАНИЕ И ПЕРЕТАСКИВАНИЕ
+  // 12. МАСШТАБИРОВАНИЕ И ПЕРЕТАСКИВАНИЕ
   const viewport = document.getElementById('viewport');
   const panContainer = document.getElementById('pan-container');
   const zoomInBtn = document.getElementById('zoom-in');
@@ -588,7 +558,7 @@ document.addEventListener('DOMContentLoaded', async function () {
       updateTransform();
     }, { passive: false });
 
-    // Сенсор
+    // Сенсорные экраны
     viewport.addEventListener('touchstart', (e) => {
       if (e.target.closest('.person-card') || e.target.closest('#zoom-controls')) return;
 

@@ -10,8 +10,8 @@
 
   <header>
     <div class="header-content">
-      <h1 id="app-title">Шежире рода Ишаевых</h1>
-      <p id="app-subtitle">Генеалогическое древо и история нашей семьи</p>
+      <h1 id="app-title" data-i18n="app_title">Шежире рода Ишаевых</h1>
+      <p id="app-subtitle" data-i18n="app_subtitle">Генеалогическое древо и история нашей семьи</p>
     </div>
 
     <!-- Верхняя панель управления: Переключатель языков, темы, кнопка "Обо мне" -->
@@ -24,11 +24,8 @@
       <button id="theme-toggle-btn" class="btn btn-outline-icon" title="Сменить тему">🌙</button>
       <button id="about-author-btn" class="btn btn-outline" data-i18n="about_author">Обо мне</button>
 
-      <!-- Панель авторизации -->
+      <!-- Панель пользователя (видна только после входа) -->
       <div id="auth-panel" class="auth-panel">
-        <div id="guest-view">
-          <button id="open-auth-modal-btn" class="btn btn-outline" data-i18n="login_register">Войти / Регистрация</button>
-        </div>
         <div id="user-view" class="hidden">
           <span id="user-email-display"></span>
           <button id="logout-btn" class="btn btn-small" data-i18n="logout">Выйти</button>
@@ -37,20 +34,32 @@
     </div>
   </header>
 
-  <!-- ЛОББИ / СТАРТОВЫЙ ЭКРАН (Режим входа / выбора рода) -->
+  <!-- ЕДИНСТВЕННЫЙ ЭКРАН ВХОДА (ОБЯЗАТЕЛЬНЫЙ ВХОД ДЛЯ ВСЕХ) -->
   <section id="lobby-screen" class="lobby-container">
     <div class="lobby-card">
-      <h2 data-i18n="lobby_welcome">Добро пожаловать в Шежире</h2>
-      <p data-i18n="lobby_desc">Авторизуйтесь, чтобы начать управление семейным древом, или выберите род для просмотра.</p>
+      <h2 data-i18n="lobby_welcome">Вход в семейное шежире</h2>
+      <p data-i18n="lobby_desc">Для просмотра и управления семейным древом необходимо войти в систему.</p>
 
-      <div id="lobby-actions">
-        <button id="lobby-login-btn" class="btn btn-primary" data-i18n="login_register">Войти / Регистрация</button>
-        <button id="lobby-view-tree-btn" class="btn btn-secondary" data-i18n="view_tree">Смотреть древо</button>
-      </div>
+      <form id="lobby-auth-form">
+        <div class="form-group">
+          <label for="lobby-email">Email:</label>
+          <input type="email" id="lobby-email" placeholder="example@mail.com" required>
+        </div>
+
+        <div class="form-group">
+          <label for="lobby-password" data-i18n="password_label">Пароль:</label>
+          <input type="password" id="lobby-password" placeholder="Пароль" required minlength="6">
+        </div>
+
+        <div class="form-actions-stack">
+          <button type="submit" id="lobby-submit-btn" class="btn btn-primary" data-i18n="login_btn">Войти</button>
+          <button type="button" id="toggle-lobby-auth-mode-btn" class="btn-link" data-i18n="no_account">Нет аккаунта? Зарегистрироваться</button>
+        </div>
+      </form>
     </div>
   </section>
 
-  <!-- ОСНОВНОЙ ЭКРАН С ДРЕВОМ -->
+  <!-- ОСНОВНОЙ ЭКРАН С ДРЕВОМ (Доступен только ПОСЛЕ входа) -->
   <main id="tree-main-screen" class="hidden">
     <section id="tree-container">
       <p class="instruction" data-i18n="instruction">Перетаскивайте удерживая мышь, используйте колесико или кнопки для масштабирования.</p>
@@ -87,8 +96,8 @@
       <button id="close-about-modal-btn" class="close-btn">&times;</button>
       <h3 data-i18n="about_title">Об авторе проекта</h3>
       <div class="about-content">
-        <p id="about-text-1">Приветствую! Данное шежире было создано мной для сохранения и передачи истории нашего рода будущим поколениям.</p>
-        <p id="about-text-2">Здесь вы можете изучать семейные связи, узнавать о своих предках и вносить новых членов нашей большой семьи.</p>
+        <p id="about-text-1" data-i18n="about_text_1">Приветствую! Данное шежире было создано мной для сохранения и передачи истории нашего рода будущим поколениям.</p>
+        <p id="about-text-2" data-i18n="about_text_2">Здесь вы можете изучать семейные связи, узнавать о своих предках и вносить новых членов нашей большой семьи.</p>
       </div>
       <div class="form-actions">
         <button type="button" id="close-about-btn" class="btn btn-primary" data-i18n="close">Закрыть</button>
@@ -193,31 +202,6 @@
         <div class="form-actions">
           <button type="button" id="cancel-btn" class="btn btn-secondary" data-i18n="cancel">Отмена</button>
           <button type="submit" class="btn btn-primary" data-i18n="save">Сохранить</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Модальное окно Авторизации -->
-  <div id="auth-modal-overlay" class="modal-overlay hidden">
-    <div class="modal">
-      <button id="close-auth-modal-btn" class="close-btn">&times;</button>
-      <h3 id="auth-title" data-i18n="login_title">Вход в систему</h3>
-
-      <form id="auth-form">
-        <div class="form-group">
-          <label for="auth-email">Email:</label>
-          <input type="email" id="auth-email" placeholder="example@mail.com" required>
-        </div>
-
-        <div class="form-group">
-          <label for="auth-password" data-i18n="password_label">Пароль:</label>
-          <input type="password" id="auth-password" placeholder="Минимум 6 символов" required minlength="6">
-        </div>
-
-        <div class="form-actions-stack">
-          <button type="submit" id="auth-submit-btn" class="btn btn-primary" data-i18n="login_btn">Войти</button>
-          <button type="button" id="toggle-auth-mode-btn" class="btn-link" data-i18n="no_account">Нет аккаунта? Зарегистрироваться</button>
         </div>
       </form>
     </div>
