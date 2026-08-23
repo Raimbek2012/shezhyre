@@ -1,6 +1,8 @@
 const SUPABASE_URL = 'https://enlphelzeokcozwyropm.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVubHBoZWx6ZW9rY296d3lyb3BtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODczMTgzMzAsImV4cCI6MjEwMjg5NDMzMH0.q7RUP8mp1xs3_TrwQ11riBtiq3JDuW0GywesomXKf0Q';
 
+const MY_KASPI_PHONE = "+7 702 720 3012"; 
+
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const i18n = {
@@ -55,7 +57,7 @@ const i18n = {
     add_child_title: "Ұрпақ қосу",
     parent_label: "Ата-анасы:",
     child_name_label: "Баланың аты-жөні:",
-    created_by: "Сайтты жасаған және әзірлеуші:",
+    created_by: "Сайтты жасаған және әзирлеуші:",
     delete_confirm: "Бұл туысты өшіргіңіз келетініне сенімдісіз бе?"
   }
 };
@@ -64,8 +66,8 @@ let currentLang = 'ru';
 let isDeleteMode = false;
 let currentTree = null;
 let currentEditorUser = null;
+let allPeopleCache = []; 
 
-// Хранение свёрнутых карточек
 let collapsedIds = new Set();
 
 function loadCollapsedState() {
@@ -85,6 +87,24 @@ function loadCollapsedState() {
 function saveCollapsedState() {
   if (!currentTree) return;
   localStorage.setItem(`collapsed_tree_${currentTree.id}`, JSON.stringify(Array.from(collapsedIds)));
+}
+
+// Рекурсивный сброс всех вложенных потомков в состояние "свёрнуто"
+function collapseAllDescendants(parentElement) {
+  const childCards = parentElement.querySelectorAll('.person-card');
+  childCards.forEach(card => {
+    const childId = card.getAttribute('data-id');
+    if (childId) {
+      collapsedIds.add(String(childId));
+      const toggleIcon = card.querySelector('.toggle-icon');
+      if (toggleIcon) toggleIcon.textContent = '[+]';
+    }
+  });
+
+  const childUls = parentElement.querySelectorAll('ul.children');
+  childUls.forEach(ul => {
+    ul.classList.add('collapsed');
+  });
 }
 
 document.addEventListener('DOMContentLoaded', async function () {
@@ -149,11 +169,21 @@ document.addEventListener('DOMContentLoaded', async function () {
   const editBirthInput = document.getElementById('edit-birth-input');
   const editDeathInput = document.getElementById('edit-death-input');
 
+  const openDonateBtn = document.getElementById('open-donate-btn');
+  const donateModalOverlay = document.getElementById('donate-modal-overlay');
+  const closeDonateModalBtn = document.getElementById('close-donate-modal-btn');
+  const cancelDonateBtn = document.getElementById('cancel-donate-btn');
+  const donateForm = document.getElementById('donate-form');
+  const donateAmountInput = document.getElementById('donate-amount');
+  const donateKaspiInfo = document.getElementById('donate-kaspi-info');
+  const kaspiPhoneDisplay = document.getElementById('kaspi-phone-display');
+
+  if (kaspiPhoneDisplay) kaspiPhoneDisplay.textContent = MY_KASPI_PHONE;
+
   let currentParentId = null;
   let currentEditPersonId = null;
   let isSignUpEditor = false;
 
-  // 1. ТЕМА И ЯЗЫКИ
   themeToggleBtn.addEventListener('click', () => {
     document.body.classList.toggle('dark-theme');
     themeToggleBtn.textContent = document.body.classList.contains('dark-theme') ? '☀️' : '🌙';
@@ -176,13 +206,42 @@ document.addEventListener('DOMContentLoaded', async function () {
   closeAboutModalBtn.addEventListener('click', () => aboutModalOverlay.classList.add('hidden'));
   closeAboutBtn.addEventListener('click', () => aboutModalOverlay.classList.add('hidden'));
 
+  if (openDonateBtn) {
+    openDonateBtn.addEventListener('click', () => {
+      donateModalOverlay.classList.remove('hidden');
+      donateKaspiInfo.classList.add('hidden');
+    });
+  }
+
+  const closeDonate = () => donateModalOverlay.classList.add('hidden');
+  if (closeDonateModalBtn) closeDonateModalBtn.addEventListener('click', closeDonate);
+  if (cancelDonateBtn) cancelDonateBtn.addEventListener('click', closeDonate);
+
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      donateAmountInput.value = btn.getAttribute('data-amount');
+    });
+  });
+
+  if (donateForm) {
+    donateForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const amount = parseInt(donateAmountInput.value);
+      if (amount < 100) {
+        alert('Минимальная сумма доната: 100 ₸');
+        return;
+      }
+      donateKaspiInfo.classList.remove('hidden');
+    });
+  }
+
   toggleDeleteModeBtn.addEventListener('click', () => {
     isDeleteMode = !isDeleteMode;
     toggleDeleteModeBtn.classList.toggle('active-delete-mode', isDeleteMode);
     loadTree();
   });
 
-  // 2. ВХОД / СОЗДАНИЕ РОДА
   treeAccessForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const treeName = treeNameInput.value.trim();
@@ -244,7 +303,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     checkEditorSession();
   }
 
-  // 3. АВТОРИЗАЦИЯ РЕДАКТОРА
   openEditorAuthBtn.addEventListener('click', () => editorModalOverlay.classList.remove('hidden'));
   closeEditorModalBtn.addEventListener('click', () => editorModalOverlay.classList.add('hidden'));
 
@@ -301,13 +359,10 @@ document.addEventListener('DOMContentLoaded', async function () {
     updateEditorUI();
   });
 
-  // 4. ЗАГРУЗКА ДРЕВА
-  async function loadTree() {
+  async function loadTree(targetPersonIdToFocus = null) {
     if (!currentTree) return;
     const treeContainer = document.querySelector('.tree > ul');
     if (!treeContainer) return;
-
-    treeContainer.innerHTML = '<li>Загрузка...</li>';
 
     const { data: people, error } = await supabaseClient
       .from('people')
@@ -320,15 +375,23 @@ document.addEventListener('DOMContentLoaded', async function () {
       return;
     }
 
+    allPeopleCache = people || [];
     treeContainer.innerHTML = '';
-    const rootPeople = people.filter(p => p.parent_id === null);
+    const rootPeople = allPeopleCache.filter(p => p.parent_id === null);
 
     if (rootPeople.length > 0) {
       rootPeople.forEach(rootPerson => {
-        treeContainer.appendChild(createPersonElement(rootPerson, people));
+        treeContainer.appendChild(createPersonElement(rootPerson, allPeopleCache));
       });
     } else {
-      treeContainer.innerHTML = '<li>В этом роду пока нет записей. Авторизуйтесь через почту, чтобы добавить основателя.</li>';
+      treeContainer.innerHTML = '<li>В этом роду пока нет записей.</li>';
+    }
+
+    if (targetPersonIdToFocus) {
+      requestAnimationFrame(() => {
+        const targetCard = document.querySelector(`.person-card[data-id="${targetPersonIdToFocus}"]`);
+        if (targetCard) focusOnElement(targetCard);
+      });
     }
   }
 
@@ -387,50 +450,63 @@ document.addEventListener('DOMContentLoaded', async function () {
     return li;
   }
 
-  // 5. РАЗВОРАЧИВАНИЕ / СВОРАЧИВАНИЕ С СОХРАНЕНИЕМ
+  // КЛИК: Раскрытие/Сворачивание + Фокусировка + Полный рекурсивный сброс всех детей
   document.addEventListener('click', function (event) {
     const card = event.target.closest('.person-card');
     if (!card || event.target.closest('.action-btns')) return;
 
     const personId = card.getAttribute('data-id');
+    const personIdStr = String(personId);
     const li = card.closest('li');
-    const directChildrenUl = li.querySelector(':scope > ul.children');
-    const toggleIcon = card.querySelector('.toggle-icon');
+    const directChildrenUl = li ? li.querySelector(':scope > ul.children') : null;
 
     if (directChildrenUl) {
       const isCurrentlyCollapsed = directChildrenUl.classList.contains('collapsed');
+      const toggleIcon = card.querySelector('.toggle-icon');
 
       if (isCurrentlyCollapsed) {
+        // Раскрываем только текущий узел
+        collapsedIds.delete(personIdStr);
         directChildrenUl.classList.remove('collapsed');
         if (toggleIcon) toggleIcon.textContent = '[−]';
-        collapsedIds.delete(String(personId));
       } else {
+        // Сворачиваем текущий узел И ВСЕХ ПОТОМКОВ рекурсивно
+        collapsedIds.add(personIdStr);
         directChildrenUl.classList.add('collapsed');
         if (toggleIcon) toggleIcon.textContent = '[+]';
-        collapsedIds.add(String(personId));
+        
+        // Гарантируем, что всё поддерево также полностью свернется
+        collapseAllDescendants(directChildrenUl);
       }
+      
       saveCollapsedState();
     }
 
-    focusOnElement(card);
+    // Фокусируемся на карточке в ЛЮБОМ случае (и при скрытии, и при раскрытии)
+    requestAnimationFrame(() => {
+      focusOnElement(card);
+    });
   });
 
+  // Точная фокусировка на объекте с учётом текущего масштаба (scale)
   function focusOnElement(element) {
-    const rect = element.getBoundingClientRect();
     const viewportRect = viewport.getBoundingClientRect();
+    const elementRect = element.getBoundingClientRect();
 
-    const elementCenterX = rect.left + rect.width / 2;
-    const elementCenterY = rect.top + rect.height / 2;
+    const elementCenterX = elementRect.left + elementRect.width / 2;
+    const elementCenterY = elementRect.top + elementRect.height / 2;
 
     const viewportCenterX = viewportRect.left + viewportRect.width / 2;
     const viewportCenterY = viewportRect.top + viewportRect.height / 2;
 
-    pointX += viewportCenterX - elementCenterX;
-    pointY += viewportCenterY - elementCenterY;
+    const deltaX = (viewportCenterX - elementCenterX) / scale;
+    const deltaY = (viewportCenterY - elementCenterY) / scale;
+
+    pointX += deltaX;
+    pointY += deltaY;
     updateTransform();
   }
 
-  // 6. ОПЕРАЦИИ С БАЗОЙ
   document.addEventListener('click', async function (event) {
     if (event.target.classList.contains('delete-card-btn')) {
       const id = event.target.closest('.person-card').getAttribute('data-id');
@@ -561,7 +637,6 @@ document.addEventListener('DOMContentLoaded', async function () {
     });
   }
 
-  // 7. МАСШТАБИРОВАНИЕ И ПЕРЕМЕЩЕНИЕ (ПК + СЕНСОРНЫЕ ЭКРАНЫ / ТЕЛЕФОНЫ)
   const viewport = document.getElementById('viewport');
   const panContainer = document.getElementById('pan-container');
   const zoomInBtn = document.getElementById('zoom-in');
@@ -583,19 +658,18 @@ document.addEventListener('DOMContentLoaded', async function () {
   }
 
   if (viewport) {
-    // --- ДЛЯ МЫШИ (ПК) ---
     viewport.addEventListener('mousedown', (e) => {
       if (e.target.closest('.person-card') || e.target.closest('#zoom-controls')) return;
       isDragging = true;
-      startX = e.clientX - pointX;
-      startY = e.clientY - pointY;
+      startX = e.clientX - pointX * scale;
+      startY = e.clientY - pointY * scale;
     });
 
     window.addEventListener('mousemove', (e) => {
       if (!isDragging) return;
       e.preventDefault();
-      pointX = e.clientX - startX;
-      pointY = e.clientY - startY;
+      pointX = (e.clientX - startX) / scale;
+      pointY = (e.clientY - startY) / scale;
       updateTransform();
     });
 
@@ -613,14 +687,13 @@ document.addEventListener('DOMContentLoaded', async function () {
       updateTransform();
     }, { passive: false });
 
-    // --- ДЛЯ ТЕЛЕФОНОВ И ПЛАНШЕТОВ (TOUCH) ---
     viewport.addEventListener('touchstart', (e) => {
       if (e.target.closest('.person-card') || e.target.closest('#zoom-controls')) return;
 
       if (e.touches.length === 1) {
         isDragging = true;
-        startX = e.touches[0].clientX - pointX;
-        startY = e.touches[0].clientY - pointY;
+        startX = e.touches[0].clientX - pointX * scale;
+        startY = e.touches[0].clientY - pointY * scale;
       } else if (e.touches.length === 2) {
         isDragging = false;
         initialPinchDistance = Math.hypot(
@@ -634,8 +707,8 @@ document.addEventListener('DOMContentLoaded', async function () {
       if (e.target.closest('.person-card') || e.target.closest('#zoom-controls')) return;
 
       if (isDragging && e.touches.length === 1) {
-        pointX = e.touches[0].clientX - startX;
-        pointY = e.touches[0].clientY - startY;
+        pointX = (e.touches[0].clientX - startX) / scale;
+        pointY = (e.touches[0].clientY - startY) / scale;
         updateTransform();
       } else if (e.touches.length === 2 && initialPinchDistance) {
         const currentDistance = Math.hypot(

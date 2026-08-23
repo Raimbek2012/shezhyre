@@ -3,246 +3,226 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Шежире — Семейное древо</title>
+  <title>Шежире рода</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
-<body class="light-theme">
+<body>
 
-  <header>
-    <div class="header-content">
-      <h1 id="app-title" data-i18n="app_title">Шежире рода</h1>
-      <p id="app-subtitle" data-i18n="app_subtitle">Генеалогическое древо и история нашей семьи</p>
+  <!-- ВЕРХНЯЯ ПАНЕЛЬ -->
+  <header id="app-header">
+    <div class="header-left">
+      <h1 data-i18n="app_title">Шежире рода</h1>
     </div>
-
-    <!-- Верхняя панель управления -->
-    <div class="top-controls">
+    <div class="header-right">
+      <button id="about-author-btn" class="header-btn" data-i18n="about_author">Обо мне</button>
+      <button id="theme-toggle-btn" class="header-btn">🌙</button>
       <div class="lang-switch">
-        <button id="lang-ru-btn" class="active-lang">RU</button>
-        <button id="lang-kk-btn">КҚ</button>
-      </div>
-
-      <button id="theme-toggle-btn" class="btn btn-outline-icon" title="Сменить тему">🌙</button>
-      <button id="about-author-btn" class="btn btn-outline" data-i18n="about_author">Обо мне</button>
-
-      <!-- Панель управления родом и авторизцией -->
-      <div id="tree-info-panel" class="auth-panel hidden">
-        <span id="current-tree-display" class="tree-badge"></span>
-        
-        <!-- Блок авторизации почты для прав редактирования -->
-        <div id="editor-auth-box">
-          <span id="editor-status-text" class="status-badge viewer">Режим чтения</span>
-          <button id="open-editor-auth-btn" class="btn btn-small btn-primary">Войти как редактор</button>
-          <button id="logout-editor-btn" class="btn btn-small hidden">Выйти из редактора</button>
-        </div>
-
-        <button id="leave-tree-btn" class="btn btn-small btn-secondary">Сменить род</button>
+        <button id="lang-ru-btn" class="lang-btn active-lang">RU</button>
+        <button id="lang-kk-btn" class="lang-btn">KK</button>
       </div>
     </div>
   </header>
 
-  <!-- ЭКРАН ВХОДА В РОД (Имя рода + Пароль) -->
-  <section id="lobby-screen" class="lobby-container">
+  <!-- ЛОББИ: ВХОД / СОЗДАНИЕ РОДА -->
+  <div id="lobby-screen" class="screen-container">
     <div class="lobby-card">
       <h2 data-i18n="lobby_welcome">Вход в семейное шежире</h2>
       <p data-i18n="lobby_desc">Введите название вашего рода и пароль. Если рода с таким названием нет, он создастся автоматически.</p>
-
+      
       <form id="tree-access-form">
-        <div class="form-group">
-          <label for="tree-name-input">Название рода / Фамилия:</label>
-          <input type="text" id="tree-name-input" placeholder="Например: Ишаевы" required>
-        </div>
-
-        <div class="form-group">
-          <label for="tree-password-input">Пароль рода:</label>
-          <input type="password" id="tree-password-input" placeholder="Пароль для доступа к роду" required>
-        </div>
-
-        <div class="form-actions-stack">
-          <button type="submit" class="btn btn-primary">Войти / Создать род</button>
-        </div>
+        <label for="tree-name-input">Название рода:</label>
+        <input type="text" id="tree-name-input" placeholder="Например: Адай, Аргын..." required>
+        
+        <label for="tree-password-input">Пароль рода:</label>
+        <input type="password" id="tree-password-input" placeholder="Введите пароль" required>
+        
+        <button type="submit" class="submit-btn">Войти в шежире</button>
       </form>
     </div>
-  </section>
+  </div>
 
-  <!-- ОСНОВНОЙ ЭКРАН С ДРЕВОМ -->
-  <main id="tree-main-screen" class="hidden">
-    <section id="tree-container">
-      <p class="instruction" data-i18n="instruction">Перетаскивайте удерживая мышь, используйте колесико или кнопки для масштабирования.</p>
+  <!-- ИНФОРМАЦИОННАЯ ПАНЕЛЬ ДРЕВА -->
+  <div id="tree-info-panel" class="hidden">
+    <div class="info-left">
+      <span id="current-tree-display" class="tree-badge"></span>
+      <span id="editor-status-text" class="status-badge viewer">Режим чтения</span>
+    </div>
+    <div class="info-right">
+      <button id="open-editor-auth-btn" class="info-btn">Войти как редактор</button>
+      <button id="logout-editor-btn" class="info-btn hidden">Выйти из редактора</button>
+      <button id="leave-tree-btn" class="info-btn danger">Сменить род</button>
+    </div>
+  </div>
 
-      <!-- Панель управления масштабом -->
+  <!-- ОСНОВНОЙ ЭКРАН ДРЕВА -->
+  <div id="tree-main-screen" class="hidden">
+    <div id="viewport">
+      <div id="pan-container">
+        <div class="tree">
+          <ul></ul>
+        </div>
+      </div>
+
+      <!-- КНОПКИ МАСШТАБА -->
       <div id="zoom-controls">
-        <button id="zoom-in" title="Увеличить">+</button>
-        <button id="zoom-out" title="Уменьшить">−</button>
-        <button id="zoom-reset" title="Сбросить масштаб">100%</button>
+        <button id="zoom-in">+</button>
+        <button id="zoom-out">−</button>
+        <button id="zoom-reset">🎯</button>
       </div>
+    </div>
+  </div>
 
-      <!-- Внешняя область-просмотрщик -->
-      <div id="viewport">
-        <div id="pan-container">
-          <div class="tree">
-            <ul>
-              <!-- Древо загрузится из Supabase -->
-            </ul>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <!-- Панель кнопок быстрых действий (Видна ТОЛЬКО для редакторов с почтой) -->
+  <!-- ПЛАВАЮЩИЕ КНОПКИ ДЛЯ РЕДАКТОРА -->
   <div id="fab-container" class="hidden">
-    <button id="toggle-delete-mode-btn" class="fab-btn fab-delete" title="Режим удаления">🗑️</button>
-    <button id="add-root-btn" class="fab-btn fab-add" title="Добавить нового основателя">+</button>
+    <button id="add-root-btn" class="fab-btn" title="Добавить основателя">+</button>
+    <button id="toggle-delete-mode-btn" class="fab-btn danger" title="Режим удаления">🗑️</button>
   </div>
 
-  <!-- Модалка: Авторизация почты редактора -->
-  <div id="editor-modal-overlay" class="modal-overlay hidden">
-    <div class="modal">
-      <button id="close-editor-modal-btn" class="close-btn">&times;</button>
-      <h3>Авторизация редактора</h3>
-      <p>Для внесения изменений в древо (добавление, редактирование, удаление) необходимо привязать вашу электронную почту.</p>
+  <!-- КНОПКА ДОНАТА -->
+  <button id="open-donate-btn" class="donate-fab">💳 Поддержать проект</button>
 
-      <form id="editor-auth-form">
-        <div class="form-group">
-          <label for="editor-email">Email:</label>
-          <input type="email" id="editor-email" placeholder="example@mail.com" required>
-        </div>
-
-        <div class="form-group">
-          <label for="editor-password">Пароль аккаунта:</label>
-          <input type="password" id="editor-password" placeholder="Пароль" required minlength="6">
-        </div>
-
-        <div class="form-actions-stack">
-          <button type="submit" id="editor-submit-btn" class="btn btn-primary">Войти как редактор</button>
-          <button type="button" id="toggle-editor-mode-btn" class="btn-link">Нет аккаунта? Зарегистрироваться</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Модалка: Об авторе -->
+  <!-- МОДАЛЬНОЕ ОКНО "ОБ АВТОРЕ" -->
   <div id="about-modal-overlay" class="modal-overlay hidden">
-    <div class="modal">
-      <button id="close-about-modal-btn" class="close-btn">&times;</button>
+    <div class="modal-card">
+      <button class="close-modal-btn" id="close-about-modal-btn">&times;</button>
       <h3 data-i18n="about_title">Об авторе проекта</h3>
-      <div class="about-content">
-        <p id="about-text-1" data-i18n="about_text_1">Приветствую! Меня зовут Раимбек. Данное шежире было создано мной для сохранения и передачи истории нашего рода будущим поколениям.</p>
-        <p id="about-text-2" data-i18n="about_text_2">Здесь вы можете изучать семейные связи, узнавать о своих предках и вносить новых членов нашей семьи.</p>
-      </div>
-      <div class="form-actions">
-        <button type="button" id="close-about-btn" class="btn btn-primary" data-i18n="close">Закрыть</button>
+      <p data-i18n="about_text_1">Приветствую! Меня зовут Раимбек. Данное шежире было создано мной для сохранения и передачи истории нашего рода будущим поколениям.</p>
+      <p data-i18n="about_text_2">Здесь вы можете изучать семейные связи, узнавать о своих предках и вносить новых членов нашей семьи.</p>
+      <div class="modal-actions">
+        <button type="button" class="cancel-btn" id="close-about-btn" data-i18n="close">Закрыть</button>
       </div>
     </div>
   </div>
 
-  <!-- Модалка: Добавление основателя -->
-  <div id="root-modal-overlay" class="modal-overlay hidden">
-    <div class="modal">
-      <button id="close-root-modal-btn" class="close-btn">&times;</button>
-      <h3 data-i18n="add_root_title">Добавить новый род / основателя</h3>
-      
-      <form id="add-root-form">
-        <div class="form-group">
-          <label for="root-name-input" data-i18n="root_name_label">Имя и Фамилия основателя:</label>
-          <input type="text" id="root-name-input" placeholder="Например: Ишаев Хан" required>
-        </div>
-        <div class="form-group row-inputs">
-          <div>
-            <label for="root-birth-input" data-i18n="birth_year">Год рождения:</label>
-            <input type="text" id="root-birth-input" placeholder="1900">
-          </div>
-          <div>
-            <label for="root-death-input" data-i18n="death_year">Год смерти:</label>
-            <input type="text" id="root-death-input" placeholder="1980">
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <button type="button" id="cancel-root-btn" class="btn btn-secondary" data-i18n="cancel">Отмена</button>
-          <button type="submit" class="btn btn-primary" data-i18n="add">Добавить</button>
+  <!-- МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ РЕДАКТОРА -->
+  <div id="editor-modal-overlay" class="modal-overlay hidden">
+    <div class="modal-card">
+      <button class="close-modal-btn" id="close-editor-modal-btn">&times;</button>
+      <h3>Авторизация редактора</h3>
+      <form id="editor-auth-form">
+        <label for="editor-email">Email:</label>
+        <input type="email" id="editor-email" placeholder="email@example.com" required>
+        <label for="editor-password">Пароль:</label>
+        <input type="password" id="editor-password" placeholder="Пароль" required>
+        
+        <div class="modal-actions">
+          <button type="submit" class="submit-btn" id="editor-submit-btn">Войти как редактор</button>
         </div>
       </form>
+      <div style="margin-top: 10px; text-align: center;">
+        <button id="toggle-editor-mode-btn" class="text-link-btn">Нет аккаунта? Зарегистрироваться</button>
+      </div>
     </div>
   </div>
 
-  <!-- Модалка: Редактирование -->
-  <div id="edit-modal-overlay" class="modal-overlay hidden">
-    <div class="modal">
-      <button id="close-edit-modal-btn" class="close-btn">&times;</button>
-      <h3 data-i18n="edit_title">Редактировать данные</h3>
-      
-      <form id="edit-person-form">
-        <div class="form-group">
-          <label for="edit-name-input" data-i18n="name_label">Имя и Фамилия:</label>
-          <input type="text" id="edit-name-input" required>
-        </div>
-
-        <div class="form-group">
-          <label for="edit-spouse-input" data-i18n="spouse_label">Супруг / Супруга:</label>
-          <input type="text" id="edit-spouse-input" placeholder="Например: Алия">
-        </div>
-
-        <div class="form-group row-inputs">
-          <div>
-            <label for="edit-birth-input" data-i18n="birth_year">Год рождения:</label>
-            <input type="text" id="edit-birth-input" placeholder="1950">
-          </div>
-          <div>
-            <label for="edit-death-input" data-i18n="death_year">Год смерти:</label>
-            <input type="text" id="edit-death-input" placeholder="2020">
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <button type="button" id="cancel-edit-btn" class="btn btn-secondary" data-i18n="cancel">Отмена</button>
-          <button type="submit" class="btn btn-primary" data-i18n="save">Сохранить</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Модалка: Добавление потомка -->
+  <!-- МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ ПОТОМКА -->
   <div id="modal-overlay" class="modal-overlay hidden">
-    <div class="modal">
-      <button id="close-modal-btn" class="close-btn">&times;</button>
+    <div class="modal-card">
+      <button class="close-modal-btn" id="close-modal-btn">&times;</button>
       <h3 data-i18n="add_child_title">Добавить потомка</h3>
-      
       <form id="add-child-form">
-        <div class="form-group">
-          <label for="parent-name-input" data-i18n="parent_label">Родитель:</label>
-          <input type="text" id="parent-name-input" disabled readonly>
-        </div>
+        <label data-i18n="parent_label">Родитель:</label>
+        <input type="text" id="parent-name-input" disabled>
+        
+        <label data-i18n="child_name_label">Имя и Фамилия ребенка:</label>
+        <input type="text" id="child-name-input" required placeholder="Введите имя">
+        
+        <label data-i18n="birth_year">Год рождения:</label>
+        <input type="text" id="child-birth-input" placeholder="например: 1985">
+        
+        <label data-i18n="death_year">Год смерти:</label>
+        <input type="text" id="child-death-input" placeholder="например: 2020">
 
-        <div class="form-group">
-          <label for="child-name-input" data-i18n="child_name_label">Имя и Фамилия ребенка:</label>
-          <input type="text" id="child-name-input" placeholder="Например: Ишаев Алихан" required>
-        </div>
-
-        <div class="form-group row-inputs">
-          <div>
-            <label for="child-birth-input" data-i18n="birth_year">Год рождения:</label>
-            <input type="text" id="child-birth-input" placeholder="2000">
-          </div>
-          <div>
-            <label for="child-death-input" data-i18n="death_year">Год смерти:</label>
-            <input type="text" id="child-death-input" placeholder="—">
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <button type="button" id="cancel-btn" class="btn btn-secondary" data-i18n="cancel">Отмена</button>
-          <button type="submit" class="btn btn-primary" data-i18n="save">Сохранить</button>
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" id="cancel-btn" data-i18n="cancel">Отмена</button>
+          <button type="submit" class="submit-btn" data-i18n="add">Добавить</button>
         </div>
       </form>
     </div>
   </div>
 
-  <footer>
-    <p>© <span id="footer-text">Шежире</span> | <span data-i18n="created_by">Создатель и разработчик сайта:</span> <strong>Ишаев Раимбек</strong></p>
-  </footer>
+  <!-- МОДАЛЬНОЕ ОКНО ДОБАВЛЕНИЯ ОСНОВАТЕЛЯ -->
+  <div id="root-modal-overlay" class="modal-overlay hidden">
+    <div class="modal-card">
+      <button class="close-modal-btn" id="close-root-modal-btn">&times;</button>
+      <h3 data-i18n="add_root_title">Добавить новый род / основателя</h3>
+      <form id="add-root-form">
+        <label data-i18n="root_name_label">Имя и Фамилия основателя:</label>
+        <input type="text" id="root-name-input" required placeholder="Введите имя основателя">
+        
+        <label data-i18n="birth_year">Год рождения:</label>
+        <input type="text" id="root-birth-input" placeholder="например: 1890">
+        
+        <label data-i18n="death_year">Год смерти:</label>
+        <input type="text" id="root-death-input" placeholder="например: 1965">
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" id="cancel-root-btn" data-i18n="cancel">Отмена</button>
+          <button type="submit" class="submit-btn" data-i18n="add">Добавить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО РЕДАКТИРОВАНИЯ КАРТОЧКИ -->
+  <div id="edit-modal-overlay" class="modal-overlay hidden">
+    <div class="modal-card">
+      <button class="close-modal-btn" id="close-edit-modal-btn">&times;</button>
+      <h3 data-i18n="edit_title">Редактировать данные</h3>
+      <form id="edit-person-form">
+        <label data-i18n="name_label">Имя и Фамилия:</label>
+        <input type="text" id="edit-name-input" required>
+
+        <label data-i18n="spouse_label">Супруг / Супруга:</label>
+        <input type="text" id="edit-spouse-input" placeholder="Имя супруги/супруга">
+        
+        <label data-i18n="birth_year">Год рождения:</label>
+        <input type="text" id="edit-birth-input">
+        
+        <label data-i18n="death_year">Год смерти:</label>
+        <input type="text" id="edit-death-input">
+
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" id="cancel-edit-btn" data-i18n="cancel">Отмена</button>
+          <button type="submit" class="submit-btn" data-i18n="save">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНОЕ ОКНО ДОНАТА -->
+  <div id="donate-modal-overlay" class="modal-overlay hidden">
+    <div class="modal-card">
+      <button class="close-modal-btn" id="close-donate-modal-btn">&times;</button>
+      <h3>Поддержать развитие шежире</h3>
+      <p>Ваша поддержка помогает оплачивать сервер и развивать проект!</p>
+      
+      <div class="preset-amounts">
+        <button class="preset-btn" data-amount="500">500 ₸</button>
+        <button class="preset-btn" data-amount="1000">1 000 ₸</button>
+        <button class="preset-btn" data-amount="2000">2 000 ₸</button>
+      </div>
+
+      <form id="donate-form">
+        <label for="donate-amount">Сумма поддержки (₸):</label>
+        <input type="number" id="donate-amount" min="100" value="500" required>
+        
+        <div id="donate-kaspi-info" class="hidden" style="margin-top: 15px; padding: 12px; background: #f0fdf4; border-radius: 8px; text-align: center;">
+          <p style="margin: 0;"><strong>Перевод Kaspi Gold:</strong></p>
+          <p style="font-size: 1.2rem; font-weight: bold; color: #059669; margin: 5px 0;" id="kaspi-phone-display">+7 702 720 3012</p>
+          <p style="margin: 0; font-size: 0.9rem;">Получатель: <strong>Раимбек Б.</strong></p>
+          <small style="color: #666; display: block; margin-top: 4px;">Переведите указанную сумму в приложении Kaspi</small>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 15px;">
+          <button type="button" class="cancel-btn" id="cancel-donate-btn">Закрыть</button>
+          <button type="submit" class="submit-btn" id="submit-donate-btn">Перевести</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="script.js"></script>
 </body>
 </html>
